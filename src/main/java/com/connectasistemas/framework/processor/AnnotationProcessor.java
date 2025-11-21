@@ -2,6 +2,7 @@ package com.connectasistemas.framework.processor;
 
 import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
+import com.connectasistemas.framework.utils.ScreenManagerSharedData;
 import com.connectasistemas.framework.utils.ScreenMetadata;
 
 // Processa as anotações @Screen e @ScreenField
@@ -69,6 +70,7 @@ public class AnnotationProcessor {
             if (!field.isAnnotationPresent(ScreenField.class)) {
                 continue;
             }
+
             // Obtém a anotação
             ScreenField f = field.getAnnotation(ScreenField.class);
 

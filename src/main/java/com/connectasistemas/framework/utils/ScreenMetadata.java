@@ -29,6 +29,11 @@ public class ScreenMetadata {
 
     // Adiciona um campo anotado
     public void addField(String acronym, Field field) {
+        // Caso já exista retorna uma exceção
+        if(fields.containsKey(acronym)) {
+            throw new RuntimeException(StringUtils.concat("Elemento já adicionado para a tela atual: ", acronym));
+        }
+
         fields.put(acronym, field);
     }
 

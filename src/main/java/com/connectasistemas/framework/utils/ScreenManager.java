@@ -38,17 +38,18 @@ public class ScreenManager {
             // Monta layout básico
             HBox root = new HBox(10);
 
-            for (var entry : meta.getFields().entrySet()) {
-
-                String acronym = entry.getKey();
-                Field field = entry.getValue();
+            meta.getFields().forEach((acronym, field) -> {
                 field.setAccessible(true);
 
-                // tipo declarado
+                // Tipo declarado
                 Class<?> type = field.getType();
 
-                // cria Node
+                // Cria Node
                 Node node = ElementManager.createElement(type);
+
+                // Adiciona elemento a lista de cache
+                // OBS: usada para facilitar futuras manipulações via Acronym
+                ScreenManagerSharedData.setScreenData(screenClass, acronym, node);
 
                 // aplica eventos
                 EventBinder.attach(acronym, node, screen, meta.callbackInstance());
@@ -57,7 +58,7 @@ public class ScreenManager {
                 // TODO: Rever lógica para considerar posicionamento e o tipo de elemento pai tipo:
                 // @ScreenElement(acronym = "teste", child = borderPane, position = BorderPanePosition.TOP)
                 root.getChildren().add(node);
-            }
+            });
 
             // Troca a cena
             Scene scene = new Scene(root);

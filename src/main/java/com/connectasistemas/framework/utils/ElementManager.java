@@ -4,6 +4,7 @@ import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class ElementManager {
         registry.put(TextField.class, TextField::new);
         registry.put(Label.class, Label::new);
         registry.put(CheckBox.class, CheckBox::new);
+        registry.put(BorderPane.class, BorderPane::new);
     }
 
     // Cria o Node baseado apenas no tipo do objeto recebido

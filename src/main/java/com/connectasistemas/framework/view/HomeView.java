@@ -11,13 +11,11 @@ import javafx.scene.layout.BorderPane;
 @Screen(title = "Home", callbacks = HomeController.class)
 public class HomeView {
 
-    @ScreenField(acronym = "pane")
-    private BorderPane root;
 
     @ScreenField(acronym = "nome", father = "root", position = Position.CENTER)
     private TextField nome;
 
-    @ScreenField(acronym = "cend")
+    @ScreenField(acronym = "nome1")
     private TextField endereco;
 
 }
