@@ -1,7 +1,14 @@
 package com.connectasistemas.framework.utils;
 
-import javafx.beans.value.ChangeListener;
+import com.connectasistemas.framework.interfaces.EventBinderEvents;
+import com.connectasistemas.framework.utils.events.EventBinderButton;
+import com.connectasistemas.framework.utils.events.EventBinderCheckBox;
+import com.connectasistemas.framework.utils.events.EventBinderComboBox;
+import com.connectasistemas.framework.utils.events.EventBinderTextField;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 
 import java.util.*;
@@ -46,58 +53,22 @@ public class EventBinder {
         }
 
         List<Runnable> unregisters = new ArrayList<>();
+        EventBinderEvents binder = null;
 
-        // TextField
         if (node instanceof TextField txt) {
-            // ---------- FOCUS (entcam / saicam) ----------
-            // Se existir callback para entrada ou saída de foco, registra listener
-            // Quando o campo ganha foco -> chama "entcam"
-            // Quando o campo perde foco -> chama "saicam"
-            if (CallbackInvoker.exists(callbacksInstance, "entcam", acronym)
-                    || CallbackInvoker.exists(callbacksInstance, "saicam", acronym)) {
-                ChangeListener<Boolean> focusListener = (obs, oldV, newV) -> {
-                    if (newV) {
-                        CallbackInvoker.call(callbacksInstance, screenInstance, "entcam", acronym);
-                    } else {
-                        CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
-                    }
-                };
+            binder = new EventBinderTextField(acronym, txt, screenInstance, callbacksInstance);
+        } else if (node instanceof CheckBox checkBox) {
+            binder = new EventBinderCheckBox(acronym, checkBox, screenInstance, callbacksInstance);
+        } else if (node instanceof ComboBox<?> comboBox) {
+            binder = new EventBinderComboBox(acronym, comboBox, screenInstance, callbacksInstance);
+        } else if (node instanceof Button button) {
+            binder = new EventBinderButton(acronym, button, screenInstance, callbacksInstance);
+        }
 
-                txt.focusedProperty().addListener(focusListener);
-                unregisters.add(() -> txt.focusedProperty().removeListener(focusListener));
-            }
-            // ---------- ALTERAÇÃO (altcam) ----------
-            // Se existir callback "altcam", dispara sempre que o texto mudar
-            // oldV e newV não importam para a chamada, é só detecção de alteração
-            if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
-
-                ChangeListener<String> textListener = (obs, oldV, newV) -> {
-                    CallbackInvoker.call(callbacksInstance, screenInstance, "altcam", acronym);
-                };
-
-                txt.textProperty().addListener(textListener);
-                unregisters.add(() -> txt.textProperty().removeListener(textListener));
-            }
-            // ---------- TECLA (teclad) ----------
-            // Se existir callback "teclad", registra um novo handler de tecla
-            // O callback recebe o KeyEvent também
-            // Mantém o handler antigo: chama o callback e depois o original
-            if (CallbackInvoker.exists(callbacksInstance, "teclad", acronym)) {
-
-                var oldHandler = txt.getOnKeyPressed();
-
-                var newHandler = (javafx.event.EventHandler<javafx.scene.input.KeyEvent>) e -> {
-                    // Passa o evento de tecla para o callback
-                    CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
-
-                    // Mantém o comportamento original do componente
-                    if (oldHandler != null) oldHandler.handle(e);
-                };
-
-                txt.setOnKeyPressed(newHandler);
-                unregisters.add(() -> txt.setOnKeyPressed(oldHandler));
-            }
-
+        if (binder != null) {
+            unregisters.addAll(binder.applyEntcamSaicamEvent());
+            unregisters.addAll(binder.applyAltcamEvent());
+            unregisters.addAll(binder.applyTecladEvent());
         }
 
         // Salva no registro

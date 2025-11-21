@@ -6,8 +6,6 @@ import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-import java.lang.reflect.Field;
-
 /**
  * Gerenciador da tela
  */
@@ -16,15 +14,28 @@ public class ScreenManager {
     // Referência global do Stage atual
     private static Stage mainStage;
 
+    // Referência atual da tela
+    // OBS: é a referência de @Screen não do javaFX
+    private static Object screenInstance;
+
     // Armazena o stage na inicialização
     public static void init(Stage stage) {
         mainStage = stage;
+
+        // Evento geral de fechamento da janela
+        mainStage.setOnCloseRequest(e -> {
+            // Limpa referência de elementos relacionados a tela antiga
+            clearPreviousScreen();
+        });
     }
 
     // Troca a tela para outra classe anotada com @Screen
     public static void changeTo(Class<?> screenClass) {
         try {
-            Object screen = screenClass.getDeclaredConstructor().newInstance();
+            // Limpa referência de elementos relacionados a tela antiga
+            clearPreviousScreen();
+
+            screenInstance = screenClass.getDeclaredConstructor().newInstance();
 
             // Processa anotações
             AnnotationProcessor p = new AnnotationProcessor();
@@ -52,11 +63,11 @@ public class ScreenManager {
                 ScreenManagerSharedData.setScreenData(screenClass, acronym, node);
 
                 // aplica eventos
-                EventBinder.attach(acronym, node, screen, meta.callbackInstance());
+                EventBinder.attach(acronym, node, screenInstance, meta.callbackInstance());
 
                 // Adiciona o elemento na tela
                 // TODO: Rever lógica para considerar posicionamento e o tipo de elemento pai tipo:
-                // @ScreenElement(acronym = "teste", child = borderPane, position = BorderPanePosition.TOP)
+                // @ScreenElement(acronym = "teste", child = "borderPane", position = BorderPanePosition.TOP)
                 root.getChildren().add(node);
             });
 
@@ -65,6 +76,19 @@ public class ScreenManager {
             mainStage.setScene(scene);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Limpa referência de elementos relacionados a tela antiga
+     * OBS: isso cria uma limitação de haver 2 telas sobreposta, entretanto no momento não foi pensado nesse caso
+     * TODO: Revisar isso para poder haver 2 telas, talvez usando alguma flag em @Screen, nesse caso deve salvar a...
+     * ...Referência da tela pai
+     */
+    private static void clearPreviousScreen() {
+        if (screenInstance != null) {
+            EventBinder.deleteEvents(screenInstance);
+            ScreenManagerSharedData.resetScreenData(screenInstance);
         }
     }
 }
