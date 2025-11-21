@@ -1,9 +1,11 @@
 package com.connectasistemas.framework.utils;
 
+import com.connectasistemas.framework.annotation.ScreenField;
 import com.connectasistemas.framework.processor.AnnotationProcessor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 /**
@@ -47,7 +49,7 @@ public class ScreenManager {
             mainStage.setHeight(meta.getHeight());
 
             // Monta layout básico
-            HBox root = new HBox(10);
+            Region root =  meta.root();
 
             meta.getFields().forEach((acronym, field) -> {
                 field.setAccessible(true);
@@ -65,10 +67,24 @@ public class ScreenManager {
                 // aplica eventos
                 EventBinder.attach(acronym, node, screenInstance, meta.callbackInstance());
 
+                // Obtém a anotação
+                ScreenField f = field.getAnnotation(ScreenField.class);
+
                 // Adiciona o elemento na tela
-                // TODO: Rever lógica para considerar posicionamento e o tipo de elemento pai tipo:
-                // @ScreenElement(acronym = "teste", child = "borderPane", position = BorderPanePosition.TOP)
-                root.getChildren().add(node);
+                ElementManager.addChild(root, node, f.position());
+            });
+
+            meta.getFields().forEach((key, field) -> {
+                // Obtém a anotação
+                ScreenField f = field.getAnnotation(ScreenField.class);
+
+                // Se tem um elemento pai
+                if (!f.father().isEmpty()) {
+                    // Adiciona o elemento ao Pai
+                    Region father = ScreenManagerSharedData.getScreenDataAsRegion(screenClass, f.father());
+                    Node node =  ScreenManagerSharedData.getScreenData(screenClass, key);
+                    ElementManager.addChild(father, node, f.position());
+                }
             });
 
             // Troca a cena

@@ -2,7 +2,7 @@ package com.connectasistemas.framework.processor;
 
 import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
-import com.connectasistemas.framework.utils.ScreenManagerSharedData;
+import com.connectasistemas.framework.utils.ElementManager;
 import com.connectasistemas.framework.utils.ScreenMetadata;
 
 // Processa as anotações @Screen e @ScreenField
@@ -38,6 +38,7 @@ public class AnnotationProcessor {
         metadata.setTitle(screen.title());
         metadata.setWidth(screen.width());
         metadata.setHeight(screen.height());
+        metadata.setRoot(screen.region());
 
         // Instância a classe de callbacks se houver declarada na anotação
         // OBS: Seguindo o MVC a classe de callbacks seria o Controller
@@ -52,6 +53,7 @@ public class AnnotationProcessor {
         }
 
         // Processa campos com @ScreenField
+        // OBS: Carrega todos os campos com seus determinados field no map
         processFields(cls);
 
         return metadata;

@@ -8,6 +8,6 @@ import javafx.scene.Node;
  */
 public interface PositionElement {
     boolean validate(Position position);
-    void apply(Node root, Position position);
+    void apply(Node root, Node child, Position position);
     Class<?> getElementType();
 }

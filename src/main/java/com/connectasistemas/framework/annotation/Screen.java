@@ -1,5 +1,7 @@
 package com.connectasistemas.framework.annotation;
 
+import com.connectasistemas.framework.utils.position.BorderPanePosition;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -16,4 +18,5 @@ public @interface Screen {
     int height() default 600;
     // Classe que contém os callbacks
     Class<?> callbacks() default Void.class;
+    Class<?> region() default BorderPanePosition.class;
 }

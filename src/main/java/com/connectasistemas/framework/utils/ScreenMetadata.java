@@ -1,5 +1,7 @@
 package com.connectasistemas.framework.utils;
 
+import javafx.scene.layout.Region;
+
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,6 +10,8 @@ import java.util.Map;
  * Armazena informações carregadas das anotações de uma tela
  */
 public class ScreenMetadata {
+    // Elemento root do JavaFX
+    Region root;
 
     // Título da tela (do @Screen)
     private String title;
@@ -68,6 +72,14 @@ public class ScreenMetadata {
 
     public void setCallbackInstance(Object callbackInstance) {
         this.callbackInstance = callbackInstance;
+    }
+
+    public Region root() {
+        return root;
+    }
+
+    public void setRoot(Class<?> clz) {
+        this.root = RegionManager.createRegion(clz);
     }
 
     // Retorna o mapa de campos anotados

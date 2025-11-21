@@ -32,9 +32,62 @@ public class BorderPanePosition implements PositionElement {
      * @param position Posição a ser adicionada
      */
     @Override
-    public void apply(Node target, Position position) {
+    public void apply(Node root, Node target, Position position) {
+        // valida posição
         if (!validate(position)) {
             throw new RuntimeException(StringUtils.concat("Posição: ", position, " inválida para o elemento BorderPane"));
+        }
+
+        // valida tipo
+        if (!(root instanceof BorderPane)) {
+            throw new RuntimeException(StringUtils.concat("Usado rotina de BorderPanePosition passando um: ", root));
+        }
+
+        BorderPane borderPane = (BorderPane) root;
+
+        switch (position) {
+            case TOP:
+                // já existe um elemento no TOP
+                if (borderPane.getTop() != null) {
+                    throw new RuntimeException(StringUtils.concat("Elemento já adicionado no topo: ", borderPane.getTop()));
+                }
+                borderPane.setTop(target);
+                break;
+
+            case BOTTOM:
+                // já existe um elemento no BOTTOM
+                if (borderPane.getBottom() != null) {
+                    throw new RuntimeException(StringUtils.concat("Elemento já adicionado embaixo: ", borderPane.getBottom()));
+                }
+                borderPane.setBottom(target);
+                break;
+
+            case LEFT:
+                // já existe um elemento no LEFT
+                if (borderPane.getLeft() != null) {
+                    throw new RuntimeException(StringUtils.concat("Elemento já adicionado à esquerda: ", borderPane.getLeft()));
+                }
+                borderPane.setLeft(target);
+                break;
+
+            case RIGHT:
+                // já existe um elemento no RIGHT
+                if (borderPane.getRight() != null) {
+                    throw new RuntimeException(StringUtils.concat("Elemento já adicionado à direita: ", borderPane.getRight()));
+                }
+                borderPane.setRight(target);
+                break;
+
+            case CENTER:
+                // já existe um elemento no CENTER
+                if (borderPane.getCenter() != null) {
+                    throw new RuntimeException(StringUtils.concat("Elemento já adicionado no centro: ", borderPane.getCenter()));
+                }
+                borderPane.setCenter(target);
+                break;
+
+            default:
+                throw new RuntimeException(StringUtils.concat("Posição não suportada para BorderPane: ", position));
         }
     }
 
