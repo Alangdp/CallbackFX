@@ -1,12 +1,23 @@
 package com.connectasistemas.framework.utils;
 
 import com.connectasistemas.framework.annotation.ScreenField;
+import com.connectasistemas.framework.annotation.ScreenFieldPosition;
+import com.connectasistemas.framework.annotation.ScreenFieldSize;
 import com.connectasistemas.framework.processor.AnnotationProcessor;
+import com.connectasistemas.framework.utils.position.PositionBinderGeneric;
+import com.connectasistemas.framework.utils.sizes.SizeBinderGeneric;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Gerenciador da tela
@@ -19,6 +30,14 @@ public class ScreenManager {
     // Referência atual da tela
     // OBS: é a referência de @Screen não do javaFX
     private static Object screenInstance;
+
+    // Instância do binder de tamanho
+    // OBS: Poderia ser estático, mas quero manter como interface pois alguns elementos futuros terão de ser diferente
+    private static SizeBinderGeneric sizeBinderGeneric = new SizeBinderGeneric();
+
+    // Instância do binder de posição
+    // OBS: Poderia ser estático, mas quero manter como interface pois alguns elementos futuros terão de ser diferente
+    private static PositionBinderGeneric positionBinderGeneric  = new PositionBinderGeneric();
 
     // Armazena o stage na inicialização
     public static void init(Stage stage) {
@@ -40,8 +59,8 @@ public class ScreenManager {
             screenInstance = screenClass.getDeclaredConstructor().newInstance();
 
             // Processa anotações
-            AnnotationProcessor p = new AnnotationProcessor();
-            ScreenMetadata meta = p.processScreen(screenClass);
+            AnnotationProcessor ap = new AnnotationProcessor();
+            ScreenMetadata meta = ap.processScreen(screenClass);
 
             // Atualiza título e tamanho
             mainStage.setTitle(meta.getTitle());
@@ -70,13 +89,21 @@ public class ScreenManager {
                 // Obtém a anotação
                 ScreenField f = field.getAnnotation(ScreenField.class);
 
-                // Adiciona o elemento na tela
-                ElementManager.addChild(root, node, f.position());
+                // Aplica literal se houver
+                applyLiteral(node, f.literal());
+
+                // Adiciona apenas elementos raiz diretamente ao container principal
+                if (f.father().isEmpty()) {
+                    ElementManager.addChild(root, node, f.position());
+                }
             });
 
+            // Aplica posição em relação ao elemento pai
             meta.getFields().forEach((key, field) -> {
                 // Obtém a anotação
                 ScreenField f = field.getAnnotation(ScreenField.class);
+                ScreenFieldSize s  = field.getAnnotation(ScreenFieldSize.class);
+                ScreenFieldPosition p = field.getAnnotation(ScreenFieldPosition.class);
 
                 // Se tem um elemento pai
                 if (!f.father().isEmpty()) {
@@ -85,13 +112,120 @@ public class ScreenManager {
                     Node node =  ScreenManagerSharedData.getScreenData(screenClass, key);
                     ElementManager.addChild(father, node, f.position());
                 }
+
+                Node node =  ScreenManagerSharedData.getScreenData(screenClass, key);
+
+                // Se tem anotação de tamanho no elemento
+                if (s != null) {
+                    sizeBinderGeneric.applyAll(s, node);
+                }
+
+                // Se tem anotação de posição no elemento
+                if (p != null) {
+                    positionBinderGeneric.applyAll(p, node);
+                }
             });
+
+            // Garante que a ordem dos filhos respeite o order configurado nas anotações
+            reorderChildrenByOrder(screenClass, meta, root);
 
             // Troca a cena
             Scene scene = new Scene(root);
             mainStage.setScene(scene);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Reordena os nós filhos de regiões (Pane) de acordo com a informação de ordem presente
+     * nas anotações de campo da tela (ScreenField).
+     *
+     * Para cada campo descrito em {@code meta}, obtém o nó correspondente no cache de nós
+     * associado a {@code screenClass} (via {@link ScreenManagerSharedData#getCache()}).
+     * Cada nó é agrupado por seu pai (definido pela propriedade {@code father} da anotação
+     * {@code ScreenField}; se vazio, usa-se o {@code root} passado como parâmetro). Campos
+     * sem nó correspondente no cache são ignorados.
+     *
+     * Após agrupar por pai, para cada grupo:
+     * - Se o pai for uma instância de {@link BorderPane}, o grupo é
+     *   ignorado (nenhuma alteração é feita).
+     * - Se o pai for uma instância de {@link Pane}, os nós do grupo
+     *   são ordenados primeiro pelo valor normalizado de ordem (obtido via
+     *   {@code normalizedOrder(...)}) e, em caso de empate, pelo acrônimo do campo.
+     *   Em seguida os filhos do {@code Pane} são substituídos pela lista ordenada.
+     *
+     * Efeitos colaterais:
+     * - Modifica diretamente a lista de filhos das regiões do tipo {@link Pane}.
+     * - Lê dados e resolve regiões/recursos via {@link ScreenManagerSharedData}.
+     *
+     * @param screenClass classe da tela cujos nós/metadata serão reorderados
+     * @param meta       metadados da tela que contêm os campos (acrônimo -> campo/annotação)
+     * @param root       região raiz usada como pai padrão quando {@code father} estiver vazio
+     */
+    private static void reorderChildrenByOrder(Class<?> screenClass, ScreenMetadata meta, Region root) {
+        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(screenClass);
+        if (cachedNodes == null) {
+            return;
+        }
+
+        // Agrupa de nós por pai
+        Map<Region, List<NodeOrder>> grouped = new HashMap<>();
+
+        // Adiciona os nós ao grupo conforme o pai
+        meta.getFields().forEach((acronym, field) -> {
+            ScreenField f = field.getAnnotation(ScreenField.class);
+            Region parent = f.father().isEmpty()
+                    ? root
+                    : ScreenManagerSharedData.getScreenDataAsRegion(screenClass, f.father());
+
+            Node node = cachedNodes.get(acronym);
+            if (node == null) {
+                return;
+            }
+
+            grouped.computeIfAbsent(parent, k -> new ArrayList<>())
+                    .add(new NodeOrder(f.order(), acronym, node));
+        });
+
+        // Vare os nós agrupados por pai
+        grouped.forEach((parent, nodes) -> {
+            if (parent instanceof BorderPane) {
+                return;
+            }
+
+            if (parent instanceof Pane pane) {
+                nodes.sort(Comparator
+                        .comparingInt((NodeOrder nodeOrder) -> normalizedOrder(nodeOrder.order()))
+                        .thenComparing(NodeOrder::acronym));
+
+                List<Node> orderedNodes = nodes.stream()
+                        .map(NodeOrder::node)
+                        .toList();
+                pane.getChildren().setAll(orderedNodes);
+            }
+        });
+    }
+
+    // Normaliza o order para facilitar a ordenação
+    // OBS: valores <= 0 são considerados como Integer.MAX_VALUE ou seja, vão para o final
+    private static int normalizedOrder(int order) {
+        return order <= 0 ? Integer.MAX_VALUE : order;
+    }
+
+    // Estrutura para facilitar o agrupamento e ordenação dos nós
+    private record NodeOrder(int order, String acronym, Node node) {}
+
+    /**
+     * Aplica o literal (texto) ao componente conforme seu tipo
+     */
+    private static void applyLiteral(Node node, String literal) {
+        if (literal == null || literal.isEmpty()) return;
+
+        if (node instanceof javafx.scene.control.Labeled labeled) {
+            labeled.setText(literal);
+        } else if (node instanceof javafx.scene.control.TextInputControl textInput) {
+            textInput.setPromptText(literal);
         }
     }
 

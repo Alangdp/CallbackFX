@@ -1,7 +1,5 @@
 package com.connectasistemas.framework.utils;
 
-import java.lang.reflect.Method;
-
 /**
  * Responsável pela montagem de nomes e chamada de funções de callbacks
  */

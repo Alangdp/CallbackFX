@@ -3,9 +3,7 @@ package com.connectasistemas.framework.utils;
 import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.utils.position.BorderPanePosition;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 import java.util.HashMap;
@@ -27,7 +25,12 @@ public class ElementManager {
         registry.put(TextField.class, TextField::new);
         registry.put(Label.class, Label::new);
         registry.put(CheckBox.class, CheckBox::new);
+        registry.put(PasswordField.class, PasswordField::new);
+        registry.put(Button.class,  Button::new);
+
+        // Criação de Region
         registry.put(BorderPane.class, BorderPane::new);
+        registry.put(VBox.class, VBox::new);
     }
 
     /**
@@ -73,4 +76,5 @@ public class ElementManager {
 
         throw new RuntimeException("Tipo não permitido para adicionar elementos: " + region);
     }
+    
 }

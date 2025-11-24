@@ -2,11 +2,7 @@ package com.connectasistemas.framework.processor;
 
 import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
-import com.connectasistemas.framework.utils.ElementManager;
 import com.connectasistemas.framework.utils.ScreenMetadata;
-
-// Processa as anotações @Screen e @ScreenField
-// Carrega o título, size, fields e a classe de callbacks
 
 /**
  * Processa anotações @Screen e @ScreenField

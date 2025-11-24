@@ -1,7 +1,6 @@
 package com.connectasistemas.framework.annotation;
 
 import com.connectasistemas.framework.enums.Position;
-import com.connectasistemas.framework.interfaces.PositionElement;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -18,4 +17,11 @@ public @interface ScreenField {
     String acronym();
     String father() default "";
     Position position() default Position.CENTER;
+
+    // Literal do elemento (se aplicável)
+    String literal() default "";
+
+    // Ordem do elemento na criação da tela
+    // OBS: As anotações do java não vem em ordem durante o processamento
+    int order() default 0;
 }

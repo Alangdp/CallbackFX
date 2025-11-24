@@ -2,76 +2,62 @@ package com.connectasistemas.framework.view;
 
 import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
+import com.connectasistemas.framework.annotation.ScreenFieldPosition;
+import com.connectasistemas.framework.annotation.ScreenFieldSize;
 import com.connectasistemas.framework.controller.HomeController;
 import com.connectasistemas.framework.enums.Position;
+
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
-// Tela de teste com todos os lados do BorderPane
-@Screen(
-        title = "Dummy BorderPane",
-        callbacks = HomeController.class,
-        region = VBox.class
-)
+// Pai agora é VBox
+@Screen(title = "Login", width = 460, height = 400, callbacks = HomeController.class, region = VBox.class)
 public class HomeView {
 
-    // BorderPane 1
-    @ScreenField(acronym = "pane1")
-    private BorderPane pane1;
+    @ScreenField(acronym = "root_container")
+    @ScreenFieldPosition(alignment = Position.CENTER)
+    @ScreenFieldSize(maxWidth = true, padding = {50, 20, 20, 20}, spacing = 20)
+    private VBox root_container;
+ 
+    // Título da tela
+    @ScreenField(acronym = "title_container", father = "root_container", order = 1)
+    @ScreenFieldPosition(alignment = Position.CENTER)
+    private VBox title_container;
 
-    // BorderPane 2
-    @ScreenField(acronym = "pane2")
-    private BorderPane pane2;
+    @ScreenField(acronym = "title_label", father = "title_container", literal = "Tela de login")
+    private Label title_label;
 
+    // Campos de dados
+    @ScreenField(acronym = "data_container", father = "root_container", order = 2)
+    @ScreenFieldSize(spacing = 5)
+    private VBox data_container;
 
-    // ============================================================
-    // PRIMEIRO BORERPANE (DENTRO DE UMA VBOX)
-    // ============================================================
+    // Campos de usuário
+    @ScreenField(acronym = "username_container", father = "data_container", order = 1)
+    @ScreenFieldSize(spacing = 10)
+    private VBox username_container;
 
-    // CENTER
-    @ScreenField(acronym = "p1_center", father = "pane1", position = Position.CENTER)
-    private TextField p1_center;
+    @ScreenField(acronym = "username_label", father = "username_container", literal = "Usuário:", order = 1)
+    private Label username_label;
 
-    // TOP
-    @ScreenField(acronym = "p1_top", father = "pane1", position = Position.TOP)
-    private TextField p1_top;
+    @ScreenField(acronym = "username_field", father = "username_container", literal = "Usuário:", order = 2)
+    private TextField username_field;
 
-    // BOTTOM
-    @ScreenField(acronym = "p1_bottom", father = "pane1", position = Position.BOTTOM)
-    private TextField p1_bottom;
+    // Campos de senha
+    @ScreenField(acronym = "password_container", father = "data_container", order = 2)
+    @ScreenFieldSize(spacing = 10)
+    private VBox password_container;
 
-    // LEFT
-    @ScreenField(acronym = "p1_left", father = "pane1", position = Position.LEFT)
-    private TextField p1_left;
+    @ScreenField(acronym = "password_label", father = "password_container", literal = "Senha:", order = 1)
+    private Label password_label;
 
-    // RIGHT
-    @ScreenField(acronym = "p1_right", father = "pane1", position = Position.RIGHT)
-    private TextField p1_right;
+    @ScreenField(acronym = "password_field", father = "password_container", literal = "Senha:", order = 2)
+    private PasswordField password_field;
 
-
-    // ============================================================
-    // SEGUNDO BORERPANE (DENTRO DE UMA VBOX)
-    // ============================================================
-
-    // CENTER
-    @ScreenField(acronym = "p2_center", father = "pane2", position = Position.CENTER)
-    private TextField p2_center;
-
-    // TOP
-    @ScreenField(acronym = "p2_top", father = "pane2", position = Position.TOP)
-    private TextField p2_top;
-
-    // BOTTOM
-    @ScreenField(acronym = "p2_bottom", father = "pane2", position = Position.BOTTOM)
-    private TextField p2_bottom;
-
-    // LEFT
-    @ScreenField(acronym = "p2_left", father = "pane2", position = Position.LEFT)
-    private TextField p2_left;
-
-    // RIGHT
-    @ScreenField(acronym = "p2_right", father = "pane2", position = Position.RIGHT)
-    private TextField p2_right;
+    @ScreenField(acronym = "login_button", father = "root_container", literal = "Entrar", order = 3)
+    @ScreenFieldSize(maxWidth = true)
+    private Button login_button;
 }
-
