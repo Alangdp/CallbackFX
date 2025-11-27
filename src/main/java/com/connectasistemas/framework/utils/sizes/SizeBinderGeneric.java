@@ -1,6 +1,7 @@
 package com.connectasistemas.framework.utils.sizes;
 
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
+import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.SizeBinder;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -13,9 +14,12 @@ import javafx.scene.layout.*;
 public class SizeBinderGeneric implements SizeBinder {
 
     @Override
-    public void applyAll(ScreenFieldSize s, Node node) {
+    public boolean applyAll(ScreenFieldSize s, Node node) {
+        // Tenta aplicar o size para imageView
+        // OBS: Caso não seja um imageView cai fora
+        if (applyImageView(s, node)) return true;
 
-        if (s == null || node == null) return;
+        if (s == null || node == null) return false;
 
         // ----- Width / Height -----
         if (node instanceof Region r) {
@@ -61,6 +65,10 @@ public class SizeBinderGeneric implements SizeBinder {
             VBox.setVgrow(node, Priority.ALWAYS);
         }
 
+        if (s.hgrow() && node.getParent() instanceof HBox) {
+            HBox.setHgrow(node, Priority.ALWAYS);
+        }
+
         // ----- Spacing -----
         if (node instanceof Pane p) {
             double spacing = s.spacing();
@@ -69,5 +77,29 @@ public class SizeBinderGeneric implements SizeBinder {
                 if (p instanceof HBox hbox) hbox.setSpacing(spacing);
             }
         }
+
+        // ----- Largura label -----
+        if (node instanceof TextEntryLabel tl && s.labelWidth() > 0) {
+            tl.getLabel().setMinWidth(s.labelWidth());
+            tl.getLabel().setPrefWidth(s.labelWidth());
+            tl.getLabel().setMaxWidth(s.labelWidth());
+        }
+
+        // ----- Altura label -----
+        if (node instanceof TextEntryLabel tl && s.labelHeight() > 0) {
+            tl.getLabel().setMinHeight(s.labelHeight());
+            tl.getLabel().setPrefHeight(s.labelHeight());
+            tl.getLabel().setMaxHeight(s.labelHeight());
+        }
+
+        return true;
+    }
+
+    /**
+     * Aplica o binder de eventos para ImageView
+     */
+    private boolean applyImageView(ScreenFieldSize s, Node node) {
+        SizeBinderImageView sizeBinderImageView = new SizeBinderImageView();
+        return sizeBinderImageView.applyAll(s, node);
     }
 }

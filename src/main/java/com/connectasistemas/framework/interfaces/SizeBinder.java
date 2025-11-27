@@ -7,5 +7,5 @@ import javafx.scene.Node;
  * Interface para binders de tamanho
  */
 public interface SizeBinder {
-    void applyAll(ScreenFieldSize s, Node node);
+    boolean applyAll(ScreenFieldSize s, Node node);
 }

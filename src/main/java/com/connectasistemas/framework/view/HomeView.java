@@ -4,60 +4,117 @@ import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
 import com.connectasistemas.framework.annotation.ScreenFieldPosition;
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
+import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.controller.HomeController;
 import com.connectasistemas.framework.enums.Position;
+import com.connectasistemas.framework.enums.ValidationDataType;
 
+import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-// Pai agora é VBox
-@Screen(title = "Login", width = 460, height = 400, callbacks = HomeController.class, region = VBox.class)
+@Screen(title = "Manutenção de livros", width = 540, height = 480, callbacks = HomeController.class, region = BorderPane.class)
 public class HomeView {
+    
+    @ScreenField(acronym = "contentContainer", order = 1, position = Position.CENTER)
+    @ScreenFieldPosition(alignment = Position.LEFT)
+    @ScreenFieldSize(maxWidth = true, padding = {35, 30, 20, 30}, spacing = 18)
+    public HBox contentContainer;
 
-    @ScreenField(acronym = "root_container")
-    @ScreenFieldPosition(alignment = Position.CENTER)
-    @ScreenFieldSize(maxWidth = true, padding = {50, 20, 20, 20}, spacing = 20)
-    private VBox root_container;
- 
-    // Título da tela
-    @ScreenField(acronym = "title_container", father = "root_container", order = 1)
-    @ScreenFieldPosition(alignment = Position.CENTER)
-    private VBox title_container;
+    @ScreenField(acronym = "bottomContainer", order = 2, position = Position.BOTTOM)
+    @ScreenFieldPosition(alignment = Position.BOTTOM)
+    @ScreenFieldSize(maxWidth = true, height = 45, padding = {30, 30, 30, 30}, spacing = 10, vgrow = true)
+    public HBox bottomContainer;
 
-    @ScreenField(acronym = "title_label", father = "title_container", literal = "Tela de login")
-    private Label title_label;
+    @ScreenField(acronym = "bottomSpacer", father = "bottomContainer", order = 1)
+    @ScreenFieldSize(hgrow = true)
+    public Region bottomSpacer;
 
-    // Campos de dados
-    @ScreenField(acronym = "data_container", father = "root_container", order = 2)
-    @ScreenFieldSize(spacing = 5)
-    private VBox data_container;
+    @ScreenField(acronym = "cancelButton", father = "bottomContainer", literal = "Cancelar", order = 2)
+    @ScreenFieldSize(width = 110)
+    public Button cancelButton;
 
-    // Campos de usuário
-    @ScreenField(acronym = "username_container", father = "data_container", order = 1)
-    @ScreenFieldSize(spacing = 10)
-    private VBox username_container;
+    @ScreenField(acronym = "advanceButton", father = "bottomContainer", literal = "Avançar", order = 3)
+    @ScreenFieldSize(width = 110)
+    public Button advanceButton;
 
-    @ScreenField(acronym = "username_label", father = "username_container", literal = "Usuário:", order = 1)
-    private Label username_label;
+    @ScreenField(acronym = "leftVBox", father = "contentContainer")
+    @ScreenFieldSize(spacing = 10, hgrow = true, vgrow = true)
+    public VBox leftVBox;
 
-    @ScreenField(acronym = "username_field", father = "username_container", literal = "Usuário:", order = 2)
-    private TextField username_field;
+    @ScreenField(acronym = "rightVBox", father = "contentContainer")
+    @ScreenFieldPosition(alignment = Position.TOP_CENTER)
+    @ScreenFieldSize(spacing = 10, hgrow = true, vgrow = true)
+    public VBox rightVBox;
 
-    // Campos de senha
-    @ScreenField(acronym = "password_container", father = "data_container", order = 2)
-    @ScreenFieldSize(spacing = 10)
-    private VBox password_container;
+    // -------------------------------
+    // LADO ESQUERDO
+    // -------------------------------
 
-    @ScreenField(acronym = "password_label", father = "password_container", literal = "Senha:", order = 1)
-    private Label password_label;
+    @ScreenField(acronym = "bookCode", father = "leftVBox", literal = "Código", order = 1)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(maxLength = 8, allowSymbols = false, allowLetters = false)
+    public TextEntryLabel bookCode;
 
-    @ScreenField(acronym = "password_field", father = "password_container", literal = "Senha:", order = 2)
-    private PasswordField password_field;
+    @ScreenField(acronym = "bookTitle", father = "leftVBox", literal = "Nome", order = 2)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(maxLength = 120)
+    public TextEntryLabel bookTitle;
 
-    @ScreenField(acronym = "login_button", father = "root_container", literal = "Entrar", order = 3)
-    @ScreenFieldSize(maxWidth = true)
-    private Button login_button;
+    @ScreenField(acronym = "bookAuthor", father = "leftVBox", literal = "Autor", order = 3)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(maxLength = 80)
+    public TextEntryLabel bookAuthor;
+
+    @ScreenField(acronym = "bookPublisher", father = "leftVBox", literal = "Editora", order = 4)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(maxLength = 80)
+    public TextEntryLabel bookPublisher;
+
+    @ScreenField(acronym = "bookYear", father = "leftVBox", literal = "Ano", order = 4)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(dataType = ValidationDataType.INTEGER, maxLength = 4, minValue = 0, maxValue = 2100, allowLetters = false, allowSymbols = false)
+    public TextEntryLabel bookYear;
+
+    @ScreenField(acronym = "bookIsbn", father = "leftVBox", literal = "ISBN", order = 6)
+    @ScreenFieldSize(labelWidth = 60, maxWidth = true)
+    @ScreenValidation(maxLength = 17, allowLetters = false, allowSymbols = false)
+    public TextEntryLabel bookIsbn;
+
+    // -------------------------------
+    // LADO DIREITO
+    // -------------------------------
+
+    // Capa (primeiro elemento)
+    @ScreenField(acronym = "bookCover", father = "rightVBox", literal = "Capa", order = 1)
+    @ScreenFieldSize(height = 220, width = 180)
+    public ImageView bookCover;
+
+    // Páginas
+    @ScreenField(acronym = "bookPages", father = "rightVBox", literal = "Páginas", order = 2)
+    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
+    @ScreenValidation(dataType = ValidationDataType.INTEGER, maxLength = 4, minValue = 1, maxValue = 10000, allowLetters = false, allowSymbols = false)
+    public TextEntryLabel bookPages;
+
+    // Caminho da capa (string)
+    @ScreenField(acronym = "bookCoverPath", father = "rightVBox", literal = "Arquivo", order = 3)
+    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
+    @ScreenValidation(maxLength = 255)
+    public TextEntryLabel bookCoverPath;
+
+    // Disponível (true/false)
+    @ScreenField(acronym = "bookAvailable", father = "rightVBox", literal = "Disp.", order = 4)
+    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
+    @ScreenValidation(maxLength = 5, allowSymbols = false)
+    public TextEntryLabel bookAvailable;
+
+    // Data de criação
+    @ScreenField(acronym = "bookCreatedAt", father = "rightVBox", literal = "Criado", order = 5)
+    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
+    @ScreenValidation(dataType = ValidationDataType.DATE, datePattern = "yyyy-MM-dd", minDate = "1900-01-01")
+    public TextEntryLabel bookCreatedAt;
 }

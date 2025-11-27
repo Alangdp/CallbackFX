@@ -1,5 +1,6 @@
 package com.connectasistemas.framework.controller;
 
+import com.connectasistemas.framework.utils.ScreenManager;
 import com.connectasistemas.framework.view.HomeView;
 import javafx.scene.input.KeyEvent;
 
@@ -42,5 +43,28 @@ public class HomeController {
      */
     public void callbackTecladNome(HomeView screen, KeyEvent e) {
         System.out.println("Tecla: " + e.getCode());
+    }
+
+    /**
+     * Callback chamado após a construção da HomeView.
+     */
+    public void callbackInitializeHomeView(HomeView screen) {
+        // Disabilita todos os elementos da tela
+        ScreenManager.disableWindow(HomeView.class);
+
+        // Habilita os botões de avançar e cancelar
+        ScreenManager.enableNode(screen.advanceButton);
+        ScreenManager.enableNode(screen.cancelButton);
+
+        // Habilita os campos de chave
+        ScreenManager.enableNode(screen.bookCode);
+        ScreenManager.enableNode(screen.bookCreatedAt);
+    }
+
+    /**
+     * Exemplo de validação: ano do livro precisa ser numérico e dentro da faixa configurada.
+     */
+    public void callbackValidaBookYear(HomeView screen, boolean valido, String valorDigitado) {
+        System.out.printf("Validação de Ano → válido: %s, valor: %s%n", valido, valorDigitado);
     }
 }

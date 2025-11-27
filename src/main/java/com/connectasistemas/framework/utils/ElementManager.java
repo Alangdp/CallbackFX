@@ -1,9 +1,11 @@
 package com.connectasistemas.framework.utils;
 
 import com.connectasistemas.framework.enums.Position;
+import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.utils.position.BorderPanePosition;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
 import java.util.HashMap;
@@ -17,8 +19,8 @@ public class ElementManager {
 
     // Registro de tipos suportados
     private static final Map<Class<?>, Supplier<Node>> registry = new HashMap<>();
-
     private static final BorderPanePosition borderPanePosition = new BorderPanePosition();
+    private static String literal = "";
 
     static {
         // Registro padrão
@@ -28,9 +30,16 @@ public class ElementManager {
         registry.put(PasswordField.class, PasswordField::new);
         registry.put(Button.class,  Button::new);
 
+        // Registros personalizados
+        registry.put(TextEntryLabel.class, () -> new TextEntryLabel(literal));
+
+        registry.put(ImageView.class, () -> new ImageView("https://fastly.picsum.photos/id/335/200/300.jpg?hmac=G81PbTg8uAk00mCq0eZdiTJwpa_-_FvFZJVhEGcouXQ"));
+
         // Criação de Region
+        registry.put(Region.class, Region::new);
         registry.put(BorderPane.class, BorderPane::new);
         registry.put(VBox.class, VBox::new);
+        registry.put(HBox.class, HBox::new);
     }
 
     /**
@@ -43,38 +52,46 @@ public class ElementManager {
         Supplier<Node> creator = registry.get(type);
 
         if (creator != null) {
-            return creator.get();
+            Node node = creator.get();
+            ElementManager.applyLiteral(node, ElementManager.literal);
+            return node;
         }
+
 
         throw new RuntimeException("Tipo inválido: " + type);
     }
 
     public static void addChild(Region region, Node child, Position position) {
-        if (region.getClass() == Pane.class) {
-            Pane pane = (Pane) region;
-            pane.getChildren().add(child);
-            return;
-        }
-
-        if (region.getClass() == HBox.class) {
-            HBox hBox = (HBox) region;
-            hBox.getChildren().add(child);
-            return;
-        }
-
-        if (region.getClass() == VBox.class) {
-            VBox vBox = (VBox) region;
-            vBox.getChildren().add(child);
-            return;
-        }
-
-        if (region.getClass() == BorderPane.class) {
-            BorderPane borderPane = (BorderPane) region;
+        if (region instanceof BorderPane borderPane) {
             borderPanePosition.apply(borderPane, child, position);
             return;
         }
 
+        if (region instanceof Pane pane) {
+            pane.getChildren().add(child);
+            return;
+        }
+
         throw new RuntimeException("Tipo não permitido para adicionar elementos: " + region);
+    }
+
+    public static void setLiteral(String literal) {
+        ElementManager.literal = literal;
+    }
+
+    /**
+     * Aplica o literal (texto) ao componente conforme seu tipo
+     */
+    private static void applyLiteral(Node node, String literal) {
+        if (literal == null || literal.isEmpty()) return;
+
+        if (node instanceof Labeled labeled) {
+            labeled.setText(literal);
+        } else if (node instanceof TextInputControl textInput) {
+            textInput.setPromptText(literal);
+        }
+
+        ElementManager.literal = "";
     }
     
 }

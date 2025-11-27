@@ -20,6 +20,10 @@ public @interface ScreenFieldSize {
     boolean maxWidth() default false;
     boolean maxHeight() default false;
 
+    // Define o tamanho em labels
+    double labelWidth () default 0;
+    double labelHeight() default 0;
+
     // Padding: 1=top, 2=right, 3=bottom, 4=left
     // EXE: @ScreenFieldSize(padding = {10, 20, 10, 20})
     int[] padding() default {};

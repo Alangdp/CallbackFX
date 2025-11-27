@@ -1,5 +1,6 @@
 package com.connectasistemas.framework.utils.events;
 
+import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.CallbackInvoker;
 import javafx.beans.value.ChangeListener;
@@ -44,13 +45,21 @@ public class EventBinderButton extends EventBinderEvents {
     public List<Runnable> applyEntcamSaicamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
 
-        if (CallbackInvoker.exists(callbacksInstance, "entcam", acronym)
-                || CallbackInvoker.exists(callbacksInstance, "saicam", acronym)) {
+        boolean hasEntcam = CallbackInvoker.exists(callbacksInstance, "entcam", acronym);
+        boolean hasSaicam = CallbackInvoker.exists(callbacksInstance, "saicam", acronym);
+
+        if (hasEntcam || hasSaicam) {
             var focusListener = (ChangeListener<Boolean>) (obs, oldV, newV) -> {
                 if (newV) {
-                    CallbackInvoker.call(callbacksInstance, screenInstance, "entcam", acronym);
+                    publishEvent(EventType.ENTCAM);
+                    if (hasEntcam) {
+                        CallbackInvoker.call(callbacksInstance, screenInstance, "entcam", acronym);
+                    }
                 } else {
-                    CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
+                    publishEvent(EventType.SAICAM);
+                    if (hasSaicam) {
+                        CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
+                    }
                 }
             };
 
@@ -75,6 +84,7 @@ public class EventBinderButton extends EventBinderEvents {
             var oldHandler = button.getOnAction();
 
             var newHandler = (EventHandler<ActionEvent>) e -> {
+                publishEvent(EventType.ALTCAM);
                 CallbackInvoker.call(callbacksInstance, screenInstance, "altcam", acronym);
 
                 if (oldHandler != null) oldHandler.handle(e);
@@ -103,6 +113,7 @@ public class EventBinderButton extends EventBinderEvents {
             var oldHandler = button.getOnKeyPressed();
 
             var newHandler = (EventHandler<KeyEvent>) e -> {
+                publishEvent(EventType.TECLAD);
                 // Passa o evento de tecla para o callback
                 CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
 
