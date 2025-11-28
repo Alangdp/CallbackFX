@@ -52,6 +52,10 @@ public class EventBinder {
             return;
         }
 
+        // Chama o callback config
+        // OBS: É o evento genérico para todos os elementos até mesmo para a janela
+        CallbackInvoker.call(callbacksInstance, screenInstance, "config", acronym);
+
         List<Runnable> unregisters = new ArrayList<>();
         EventBinderEvents binder = null;
 

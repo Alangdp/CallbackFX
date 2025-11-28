@@ -108,7 +108,7 @@ public class ScreenManager {
                 // OBS: usada para facilitar futuras manipulações via Acronym
                 ScreenManagerSharedData.setScreenData(screenClass, acronym, node);
 
-                // aplica eventos
+                // Aplica eventos
                 EventBinder.attach(acronym, node, screenInstance, meta.callbackInstance());
 
                 // Adiciona apenas elementos raiz diretamente ao container principal
@@ -116,6 +116,9 @@ public class ScreenManager {
                     ElementManager.addChild(root, node, f.position());
                 }
             });
+
+            // Aplica callback de config da janela
+            CallbackInvoker.call(meta.callbackInstance(), screenInstance, "config", screenInstance.getClass().getSimpleName());
 
             // Aplica posição em relação ao elemento pai
             meta.getFields().forEach((key, field) -> {

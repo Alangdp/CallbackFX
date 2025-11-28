@@ -25,6 +25,13 @@ import javafx.scene.input.KeyEvent;
 public class HomeController {
 
     /**
+     * Callback de config da janela
+     */
+    public void callbackConfigHomeView(HomeView screen) {
+        System.out.println("Config da janela");
+    }
+
+    /**
      * Callback de entrada de campo para nome
      */
     public void callbackEntcamNome(HomeView screen) {
