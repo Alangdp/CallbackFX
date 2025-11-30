@@ -8,8 +8,8 @@ import javafx.scene.Node;
  */
 public interface ValidationBinder {
     boolean applyAll(ScreenValidation validation,
-                     Node node,
-                     String acronym,
-                     Object screenInstance,
-                     Object callbacksInstance);
+            Node node,
+            String acronym,
+            Object screenInstance,
+            Object callbacksInstance);
 }

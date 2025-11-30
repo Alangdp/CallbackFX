@@ -8,14 +8,15 @@ import javafx.scene.image.ImageView;
 /**
  * SizeBinder específico para ImageView
  */
-// SizeBinder específico para ImageView
 public class SizeBinderImageView implements SizeBinder {
 
     @Override
     public boolean applyAll(ScreenFieldSize s, Node node) {
 
-        if (s == null || node == null) return false;
-        if (!(node instanceof ImageView iv)) return false;
+        if (s == null || node == null)
+            return false;
+        if (!(node instanceof ImageView iv))
+            return false;
 
         // ----- Largura -----
         double width = s.width();

@@ -14,6 +14,7 @@ public final class DatabaseManager {
             jdbi = Jdbi.create("jdbc:sqlite:app.db");
             jdbi.installPlugin(new SqlObjectPlugin());
         }
+
         return jdbi;
     }
 }

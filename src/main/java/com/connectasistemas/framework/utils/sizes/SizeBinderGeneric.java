@@ -1,6 +1,7 @@
 package com.connectasistemas.framework.utils.sizes;
 
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
+import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.SizeBinder;
 import javafx.geometry.Insets;
@@ -9,7 +10,7 @@ import javafx.scene.layout.*;
 
 /**
  * Implementação genérica do SizeBinder
- * OBS: é usado para elementos mais génericos é que seguem padrões comuns
+ * OBS: É usado para elementos mais génericos é que seguem padrões comuns
  */
 public class SizeBinderGeneric implements SizeBinder {
 
@@ -57,7 +58,7 @@ public class SizeBinderGeneric implements SizeBinder {
 
             if (node.getParent() instanceof VBox) VBox.setMargin(node, margin);
             if (node.getParent() instanceof BorderPane) BorderPane.setMargin(node, margin);
-            if (node.getParent() instanceof HBox) javafx.scene.layout.HBox.setMargin(node, margin);
+            if (node.getParent() instanceof HBox) HBox.setMargin(node, margin);
         }
 
         // ----- Grow -----
@@ -79,17 +80,29 @@ public class SizeBinderGeneric implements SizeBinder {
         }
 
         // ----- Largura label -----
-        if (node instanceof TextEntryLabel tl && s.labelWidth() > 0) {
-            tl.getLabel().setMinWidth(s.labelWidth());
-            tl.getLabel().setPrefWidth(s.labelWidth());
-            tl.getLabel().setMaxWidth(s.labelWidth());
+        if (s.labelWidth() > 0) {
+            if (node instanceof TextEntryLabel tl) {
+                tl.getLabel().setMinWidth(s.labelWidth());
+                tl.getLabel().setPrefWidth(s.labelWidth());
+                tl.getLabel().setMaxWidth(s.labelWidth());
+            } else if (node instanceof CheckEntryLabel cl) {
+                cl.getLabel().setMinWidth(s.labelWidth());
+                cl.getLabel().setPrefWidth(s.labelWidth());
+                cl.getLabel().setMaxWidth(s.labelWidth());
+            }
         }
 
         // ----- Altura label -----
-        if (node instanceof TextEntryLabel tl && s.labelHeight() > 0) {
-            tl.getLabel().setMinHeight(s.labelHeight());
-            tl.getLabel().setPrefHeight(s.labelHeight());
-            tl.getLabel().setMaxHeight(s.labelHeight());
+        if (s.labelHeight() > 0) {
+            if (node instanceof TextEntryLabel tl) {
+                tl.getLabel().setMinHeight(s.labelHeight());
+                tl.getLabel().setPrefHeight(s.labelHeight());
+                tl.getLabel().setMaxHeight(s.labelHeight());
+            } else if (node instanceof CheckEntryLabel cl) {
+                cl.getLabel().setMinHeight(s.labelHeight());
+                cl.getLabel().setPrefHeight(s.labelHeight());
+                cl.getLabel().setMaxHeight(s.labelHeight());
+            }
         }
 
         return true;

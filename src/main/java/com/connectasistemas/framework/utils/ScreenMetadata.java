@@ -115,8 +115,13 @@ public class ScreenMetadata {
         return ordered;
     }
 
-    // Vare a hierarquia dos nós de forma recursiva
-
+    /**
+     * Varre a hierarquia dos nós de forma recursiva
+     * @param nodes Nó atual
+     * @param childrenByFather Filhos por pai
+     * @param ordered Nós ordenados
+     * @param visited Nós visitados
+     */
     private void traverseHierarchy(List<Map.Entry<String, Field>> nodes,
             Map<String, List<Map.Entry<String, Field>>> childrenByFather,
             LinkedHashMap<String, Field> ordered,

@@ -33,6 +33,7 @@ public class PositionBinderGeneric implements PositionBinder {
                         setAlignment(pane, Pos.TOP_CENTER);
                 case BOTTOM ->
                         setAlignment(pane, Pos.BOTTOM_CENTER);
+                default -> {}
             }
         }
     }

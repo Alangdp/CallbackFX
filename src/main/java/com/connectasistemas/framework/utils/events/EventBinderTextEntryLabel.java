@@ -1,35 +1,36 @@
 package com.connectasistemas.framework.utils.events;
 
 import com.connectasistemas.framework.enums.EventType;
+import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.Status;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Binder de eventos para um CheckBox
+ * Binder o de eventos para um textfield
  */
-public class EventBinderCheckBox extends EventBinderEvents {
+public class EventBinderTextEntryLabel extends EventBinderEvents {
 
     String acronym;
-    CheckBox checkBox;
+    TextEntryLabel txt;
     Object screenInstance;
     Object callbacksInstance;
 
-    public EventBinderCheckBox(
+    public EventBinderTextEntryLabel(
             String acronym,
-            CheckBox checkBox,
+            TextEntryLabel txt,
             Object screenInstance,
             Object callbacksInstance
     ) {
         this.acronym = acronym;
-        this.checkBox = checkBox;
+        this.txt = txt;
         this.screenInstance = screenInstance;
         this.callbacksInstance = callbacksInstance;
     }
@@ -43,9 +44,11 @@ public class EventBinderCheckBox extends EventBinderEvents {
      */
     @Override
     public List<Runnable> applyEntcamSaicamEvent() {
+        TextField txt = this.txt.getTextField();
+
         List<Runnable> unregisters = new ArrayList<>();
 
-        unregisters.add(registerNavigationTracker(checkBox));
+        unregisters.add(registerNavigationTracker(txt));
 
         boolean hasEntcam = CallbackInvoker.exists(callbacksInstance, "entcam", acronym);
         boolean hasSaicam = CallbackInvoker.exists(callbacksInstance, "saicam", acronym);
@@ -68,16 +71,18 @@ public class EventBinderCheckBox extends EventBinderEvents {
             }
 
             Status.VALIDA = shouldValidateOnExit();
+
             if (hasSaicam) {
                 resetErrorTracking();
                 CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
-                focusIfError(checkBox);
+                focusIfError(this.txt);
             }
+
             clearExitReason();
         };
 
-        checkBox.focusedProperty().addListener(focusListener);
-        unregisters.add(() -> checkBox.focusedProperty().removeListener(focusListener));
+        txt.focusedProperty().addListener(focusListener);
+        unregisters.add(() -> txt.focusedProperty().removeListener(focusListener));
 
         return unregisters;
     }
@@ -85,23 +90,26 @@ public class EventBinderCheckBox extends EventBinderEvents {
     /**
      * Aplica eventos de teclar no campo
      * ---------- ALTERAÇÃO (altcam) ----------
-     * Se existir callback "altcam", dispara sempre que o estado marcado mudar
+     * Se existir callback "altcam", dispara sempre que o texto mudar
      * oldV e newV não importam para a chamada, é só detecção de alteração
      */
     @Override
     public List<Runnable> applyAltcamEvent() {
+        TextField txt = this.txt.getTextField();
+
         List<Runnable> unregisters = new ArrayList<>();
 
-        if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
+        ChangeListener<String> textListener = (obs, oldV, newV) -> {
+            publishEvent(EventType.ALTCAM);
 
-            ChangeListener<Boolean> selectedListener = (obs, oldV, newV) -> {
-                publishEvent(EventType.ALTCAM);
+            if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
                 CallbackInvoker.call(callbacksInstance, screenInstance, "altcam", acronym);
-            };
+            }
+        };
 
-            checkBox.selectedProperty().addListener(selectedListener);
-            unregisters.add(() -> checkBox.selectedProperty().removeListener(selectedListener));
-        }
+        txt.textProperty().addListener(textListener);
+        unregisters.add(() -> txt.textProperty().removeListener(textListener));
+
 
         return unregisters;
     }
@@ -115,11 +123,13 @@ public class EventBinderCheckBox extends EventBinderEvents {
      */
     @Override
     public List<Runnable> applyTecladEvent() {
+        TextField txt = this.txt.getTextField();
+
         List<Runnable> unregisters = new ArrayList<>();
 
         if (CallbackInvoker.exists(callbacksInstance, "teclad", acronym)) {
 
-            var oldHandler = checkBox.getOnKeyPressed();
+            var oldHandler = txt.getOnKeyPressed();
 
             var newHandler = (EventHandler<KeyEvent>) e -> {
                 publishEvent(EventType.TECLAD);
@@ -130,8 +140,8 @@ public class EventBinderCheckBox extends EventBinderEvents {
                 if (oldHandler != null) oldHandler.handle(e);
             };
 
-            checkBox.setOnKeyPressed(newHandler);
-            unregisters.add(() -> checkBox.setOnKeyPressed(oldHandler));
+            txt.setOnKeyPressed(newHandler);
+            unregisters.add(() -> txt.setOnKeyPressed(oldHandler));
         }
 
         return unregisters;

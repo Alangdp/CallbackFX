@@ -10,7 +10,7 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import java.util.List;
 
 /**
- * DAO mínimo para BorrowHistory
+ * DAO para livros retirados
  */
 public interface BorrowHistoryDao {
 

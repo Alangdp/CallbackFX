@@ -8,7 +8,7 @@ import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.controller.HomeController;
 import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.enums.ValidationDataType;
-
+import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
@@ -57,12 +57,12 @@ public class HomeView {
 
     @ScreenField(acronym = "bookCode", father = "leftVBox", literal = "Código", order = 1)
     @ScreenFieldSize(labelWidth = 60, maxWidth = true)
-    @ScreenValidation(maxLength = 8, allowSymbols = false, allowLetters = false)
+    @ScreenValidation(maxLength = 4, allowSymbols = false, allowLetters = false)
     public TextEntryLabel bookCode;
 
     @ScreenField(acronym = "bookTitle", father = "leftVBox", literal = "Nome", order = 2)
     @ScreenFieldSize(labelWidth = 60, maxWidth = true)
-    @ScreenValidation(maxLength = 120)
+    @ScreenValidation(maxLength = 120, minLength = 3)
     public TextEntryLabel bookTitle;
 
     @ScreenField(acronym = "bookAuthor", father = "leftVBox", literal = "Autor", order = 3)
@@ -89,8 +89,12 @@ public class HomeView {
     // LADO DIREITO
     // -------------------------------
 
+    @ScreenField(acronym = "bookCoverContainer", father = "rightVBox", order = 1)
+    @ScreenFieldSize(height = 220, width = 220)
+    public BorderPane bookCoverContainer;
+
     // Capa (primeiro elemento)
-    @ScreenField(acronym = "bookCover", father = "rightVBox", literal = "Capa", order = 1)
+    @ScreenField(acronym = "bookCover", father = "bookCoverContainer", literal = "Capa", position = Position.CENTER)
     @ScreenFieldSize(height = 220, width = 180)
     public ImageView bookCover;
 
@@ -110,11 +114,5 @@ public class HomeView {
     @ScreenField(acronym = "bookAvailable", father = "rightVBox", literal = "Disp.", order = 4)
     @ScreenFieldSize(labelWidth = 65, maxWidth = true)
     @ScreenValidation(maxLength = 5, allowSymbols = false)
-    public TextEntryLabel bookAvailable;
-
-    // Data de criação
-    @ScreenField(acronym = "bookCreatedAt", father = "rightVBox", literal = "Criado", order = 5)
-    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
-    @ScreenValidation(dataType = ValidationDataType.DATE, datePattern = "yyyy-MM-dd", minDate = "1900-01-01")
-    public TextEntryLabel bookCreatedAt;
+    public CheckEntryLabel bookAvailable;
 }

@@ -3,6 +3,7 @@ package com.connectasistemas.framework.utils.events;
 import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.CallbackInvoker;
+import com.connectasistemas.framework.utils.Status;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.control.ComboBox;
@@ -44,6 +45,8 @@ public class EventBinderComboBox extends EventBinderEvents {
     public List<Runnable> applyEntcamSaicamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
 
+        unregisters.add(registerNavigationTracker(comboBox));
+
         boolean hasEntcam = CallbackInvoker.exists(callbacksInstance, "entcam", acronym);
         boolean hasSaicam = CallbackInvoker.exists(callbacksInstance, "saicam", acronym);
 
@@ -56,9 +59,20 @@ public class EventBinderComboBox extends EventBinderEvents {
                     }
                 } else {
                     publishEvent(EventType.SAICAM);
-                    if (hasSaicam) {
-                        CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
+
+                    if (Status.consumeValidationSkip()) {
+                        Status.VALIDA = false;
+                        clearExitReason();
+                        return;
                     }
+
+                    Status.VALIDA = shouldValidateOnExit();
+                    if (hasSaicam) {
+                        resetErrorTracking();
+                        CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
+                        focusIfError(comboBox);
+                    }
+                    clearExitReason();
                 }
             };
 

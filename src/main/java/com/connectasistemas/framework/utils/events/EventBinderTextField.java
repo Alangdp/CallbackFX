@@ -3,6 +3,7 @@ package com.connectasistemas.framework.utils.events;
 import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.CallbackInvoker;
+import com.connectasistemas.framework.utils.Status;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.control.TextField;
@@ -44,27 +45,39 @@ public class EventBinderTextField extends EventBinderEvents {
     public List<Runnable> applyEntcamSaicamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
 
+        unregisters.add(registerNavigationTracker(txt));
+
         boolean hasEntcam = CallbackInvoker.exists(callbacksInstance, "entcam", acronym);
         boolean hasSaicam = CallbackInvoker.exists(callbacksInstance, "saicam", acronym);
 
-        if (hasEntcam || hasSaicam) {
-            ChangeListener<Boolean> focusListener = (obs, oldV, newV) -> {
-                if (newV) {
-                    publishEvent(EventType.ENTCAM);
-                    if (hasEntcam) {
-                        CallbackInvoker.call(callbacksInstance, screenInstance, "entcam", acronym);
-                    }
-                } else {
-                    publishEvent(EventType.SAICAM);
-                    if (hasSaicam) {
-                        CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
-                    }
+        ChangeListener<Boolean> focusListener = (obs, oldV, newV) -> {
+            if (newV) {
+                publishEvent(EventType.ENTCAM);
+                if (hasEntcam) {
+                    CallbackInvoker.call(callbacksInstance, screenInstance, "entcam", acronym);
                 }
-            };
+                return;
+            }
 
-            txt.focusedProperty().addListener(focusListener);
-            unregisters.add(() -> txt.focusedProperty().removeListener(focusListener));
-        }
+            publishEvent(EventType.SAICAM);
+
+            if (Status.consumeValidationSkip()) {
+                Status.VALIDA = false;
+                clearExitReason();
+                return;
+            }
+
+            Status.VALIDA = shouldValidateOnExit();
+            if (hasSaicam) {
+                resetErrorTracking();
+                CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
+                focusIfError(txt);
+            }
+            clearExitReason();
+        };
+
+        txt.focusedProperty().addListener(focusListener);
+        unregisters.add(() -> txt.focusedProperty().removeListener(focusListener));
 
         return unregisters;
     }
@@ -79,16 +92,17 @@ public class EventBinderTextField extends EventBinderEvents {
     public List<Runnable> applyAltcamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
 
-        if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
 
-            ChangeListener<String> textListener = (obs, oldV, newV) -> {
-                publishEvent(EventType.ALTCAM);
+        ChangeListener<String> textListener = (obs, oldV, newV) -> {
+            publishEvent(EventType.ALTCAM);
+
+            if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
                 CallbackInvoker.call(callbacksInstance, screenInstance, "altcam", acronym);
-            };
+            }
+        };
 
-            txt.textProperty().addListener(textListener);
-            unregisters.add(() -> txt.textProperty().removeListener(textListener));
-        }
+        txt.textProperty().addListener(textListener);
+        unregisters.add(() -> txt.textProperty().removeListener(textListener));
 
         return unregisters;
     }

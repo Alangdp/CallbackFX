@@ -1,10 +1,13 @@
 package com.connectasistemas.framework.models;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
+/**
+ * Modelo de Usuário
+ */
 public class User {
-    private UUID id;          // UUID
+
+    private Integer id;
     private String name;
     private Integer age;
     private String studentId;
@@ -12,11 +15,11 @@ public class User {
     private LocalDateTime createdAt;
 
     public User() {
+        this.createdAt = LocalDateTime.now();
     }
 
     public User(String name, Integer age, String studentId,
-                String passwordHash) {
-        this.id = UUID.randomUUID();
+            String passwordHash) {
         this.name = name;
         this.age = age;
         this.studentId = studentId;
@@ -24,7 +27,7 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
-    public UUID getId() {
+    public Integer getId() {
         return id;
     }
 

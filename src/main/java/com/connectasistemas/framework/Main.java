@@ -24,8 +24,7 @@ public class Main {
                 "9780765326355",
                 1007,
                 "covers/way_of_kings.jpg",
-                true,
-                String.valueOf(System.currentTimeMillis())
+                true
         );
 
         // Book 2 – Words of Radiance
@@ -37,8 +36,7 @@ public class Main {
                 "9780765326362",
                 1088,
                 "covers/words_of_radiance.jpg",
-                true,
-                String.valueOf(System.currentTimeMillis())
+                true
         );
 
         // Book 3 – Oathbringer
@@ -50,8 +48,7 @@ public class Main {
                 "9780765326379",
                 1248,
                 "covers/oathbringer.jpg",
-                true,
-                String.valueOf(System.currentTimeMillis())
+                true
         );
 
         // Inserção

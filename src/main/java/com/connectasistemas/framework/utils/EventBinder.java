@@ -1,10 +1,9 @@
 package com.connectasistemas.framework.utils;
 
+import com.connectasistemas.framework.fxelements.CheckEntryLabel;
+import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
-import com.connectasistemas.framework.utils.events.EventBinderButton;
-import com.connectasistemas.framework.utils.events.EventBinderCheckBox;
-import com.connectasistemas.framework.utils.events.EventBinderComboBox;
-import com.connectasistemas.framework.utils.events.EventBinderTextField;
+import com.connectasistemas.framework.utils.events.*;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -67,6 +66,10 @@ public class EventBinder {
             binder = new EventBinderComboBox(acronym, comboBox, screenInstance, callbacksInstance);
         } else if (node instanceof Button button) {
             binder = new EventBinderButton(acronym, button, screenInstance, callbacksInstance);
+        } else if (node instanceof TextEntryLabel txt) {
+            binder = new EventBinderTextEntryLabel(acronym, txt, screenInstance, callbacksInstance);
+        } else if (node instanceof CheckEntryLabel checkEntry) {
+            binder = new EventBinderCheckEntryLabel(acronym, checkEntry, screenInstance, callbacksInstance);
         }
 
         if (binder != null) {

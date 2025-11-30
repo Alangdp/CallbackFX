@@ -4,7 +4,7 @@ import com.connectasistemas.framework.enums.Position;
 import javafx.scene.Node;
 
 /**
- * Declaração
+ * Declaração de um elemento que pode aplicar posições em seus filhos
  */
 public interface PositionElement {
     boolean validate(Position position);

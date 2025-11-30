@@ -1,7 +1,11 @@
 package com.connectasistemas.framework;
 
+import com.connectasistemas.framework.controller.HomeController;
+import com.connectasistemas.framework.enums.WindowFunction;
 import com.connectasistemas.framework.utils.ScreenManager;
 import com.connectasistemas.framework.view.HomeView;
+import com.connectasistemas.framework.view.LoginView;
+
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -15,8 +19,10 @@ public class HelloApplication extends Application {
         // Inicializa o ScreenManager com o Stage principal
         ScreenManager.init(stage);
 
+        HomeController.setFunction(WindowFunction.CONSULT);
+
         // Carrega a tela inicial automaticamente
-        ScreenManager.changeTo(HomeView.class);
+        ScreenManager.changeTo(LoginView.class);
 
         stage.show();
     }

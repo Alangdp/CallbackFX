@@ -1,6 +1,7 @@
 package com.connectasistemas.framework.utils;
 
 import com.connectasistemas.framework.enums.Position;
+import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.utils.position.BorderPanePosition;
 import javafx.scene.Node;
@@ -32,6 +33,7 @@ public class ElementManager {
 
         // Registros personalizados
         registry.put(TextEntryLabel.class, () -> new TextEntryLabel(literal));
+        registry.put(CheckEntryLabel.class, () -> new CheckEntryLabel(literal));
 
         registry.put(ImageView.class, () -> new ImageView("https://fastly.picsum.photos/id/335/200/300.jpg?hmac=G81PbTg8uAk00mCq0eZdiTJwpa_-_FvFZJVhEGcouXQ"));
 
@@ -61,6 +63,13 @@ public class ElementManager {
         throw new RuntimeException("Tipo inválido: " + type);
     }
 
+    /**
+     * Adiciona um filho a um Region conforme o tipo do Region
+     *
+     * @param region   Region pai
+     * @param child    Node filho
+     * @param position Posição (apenas para BorderPane)
+     */
     public static void addChild(Region region, Node child, Position position) {
         if (region instanceof BorderPane borderPane) {
             borderPanePosition.apply(borderPane, child, position);

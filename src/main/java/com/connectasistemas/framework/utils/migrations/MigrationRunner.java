@@ -5,6 +5,9 @@ import org.jdbi.v3.core.Jdbi;
 
 import java.util.List;
 
+/**
+ * Executa as migrações disponíveis
+ */
 public class MigrationRunner {
     public static void run(Jdbi jdbi) {
         List<Migration> list = List.of(

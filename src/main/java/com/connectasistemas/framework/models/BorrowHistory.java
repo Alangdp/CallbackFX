@@ -1,17 +1,21 @@
 package com.connectasistemas.framework.models;
 
+/**
+ * Modelo de Histórico de Empréstimos
+ */
 public class BorrowHistory {
+
     private Integer id;
-    private String userId;     // FK → user.id
-    private String bookId;     // FK → book.id
+    private Integer userId;
+    private Integer bookId;
     private String borrowedAt;
     private String returnedAt;
 
     public BorrowHistory() {
     }
 
-    public BorrowHistory(String userId, String bookId,
-                         String borrowedAt, String returnedAt) {
+    public BorrowHistory(Integer userId, Integer bookId,
+            String borrowedAt, String returnedAt) {
 
         this.userId = userId;
         this.bookId = bookId;
@@ -23,19 +27,19 @@ public class BorrowHistory {
         return id;
     }
 
-    public String getUserId() {
+    public Integer getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
 
-    public String getBookId() {
+    public Integer getBookId() {
         return bookId;
     }
 
-    public void setBookId(String bookId) {
+    public void setBookId(Integer bookId) {
         this.bookId = bookId;
     }
 
@@ -55,4 +59,3 @@ public class BorrowHistory {
         this.returnedAt = returnedAt;
     }
 }
-

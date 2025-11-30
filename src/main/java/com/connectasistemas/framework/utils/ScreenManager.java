@@ -117,9 +117,6 @@ public class ScreenManager {
                 }
             });
 
-            // Aplica callback de config da janela
-            CallbackInvoker.call(meta.callbackInstance(), screenInstance, "config", screenInstance.getClass().getSimpleName());
-
             // Aplica posição em relação ao elemento pai
             meta.getFields().forEach((key, field) -> {
                 // Obtém a anotação
@@ -259,7 +256,7 @@ public class ScreenManager {
             return;
         }
 
-        CallbackInvoker.call(callbacksInstance, screenInstance, "initialize", screenClass.getSimpleName());
+        CallbackInvoker.call(callbacksInstance, screenInstance, "config", screenClass.getSimpleName());
     }
 
     /**
@@ -368,4 +365,19 @@ public class ScreenManager {
         }
     }
 
+    /**
+     * Altera o título da janela atual
+     */
+    public static void setWindowTitle(String title) {
+        if (mainStage != null) {
+            mainStage.setTitle(title);
+        }
+    }
+
+    /**
+     * Retorna o título atual da janela
+     */
+    public static String getWindowTitle() {
+        return mainStage != null ? mainStage.getTitle() : "";
+    }
 }

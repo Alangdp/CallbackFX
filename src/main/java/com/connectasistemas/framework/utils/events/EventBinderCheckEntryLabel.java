@@ -1,6 +1,7 @@
 package com.connectasistemas.framework.utils.events;
 
 import com.connectasistemas.framework.enums.EventType;
+import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.Status;
@@ -13,36 +14,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Binder de eventos para um CheckBox
+ * Binder de eventos para um CheckEntryLabel
  */
-public class EventBinderCheckBox extends EventBinderEvents {
+public class EventBinderCheckEntryLabel extends EventBinderEvents {
 
     String acronym;
-    CheckBox checkBox;
+    CheckEntryLabel entry;
     Object screenInstance;
     Object callbacksInstance;
 
-    public EventBinderCheckBox(
+    public EventBinderCheckEntryLabel(
             String acronym,
-            CheckBox checkBox,
+            CheckEntryLabel entry,
             Object screenInstance,
             Object callbacksInstance
     ) {
         this.acronym = acronym;
-        this.checkBox = checkBox;
+        this.entry = entry;
         this.screenInstance = screenInstance;
         this.callbacksInstance = callbacksInstance;
     }
 
-    /**
-     * Aplica eventos de entrada e saída de campo
-     * ---------- FOCUS (entcam / saicam) ----------
-     * Se existir callback para entrada ou saída de foco, registra listener
-     * Quando o campo ganha foco -> chama "entcam"
-     * Quando o campo perde foco -> chama "saicam"
-     */
     @Override
     public List<Runnable> applyEntcamSaicamEvent() {
+        CheckBox checkBox = this.entry.getCheckBox();
+
         List<Runnable> unregisters = new ArrayList<>();
 
         unregisters.add(registerNavigationTracker(checkBox));
@@ -68,11 +64,13 @@ public class EventBinderCheckBox extends EventBinderEvents {
             }
 
             Status.VALIDA = shouldValidateOnExit();
+
             if (hasSaicam) {
                 resetErrorTracking();
                 CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
-                focusIfError(checkBox);
+                focusIfError(this.entry);
             }
+
             clearExitReason();
         };
 
@@ -82,15 +80,35 @@ public class EventBinderCheckBox extends EventBinderEvents {
         return unregisters;
     }
 
-    /**
-     * Aplica eventos de teclar no campo
-     * ---------- ALTERAÇÃO (altcam) ----------
-     * Se existir callback "altcam", dispara sempre que o estado marcado mudar
-     * oldV e newV não importam para a chamada, é só detecção de alteração
-     */
+    @Override
+    public List<Runnable> applyTecladEvent() {
+        List<Runnable> unregisters = new ArrayList<>();
+        CheckBox checkBox = this.entry.getCheckBox();
+
+        if (CallbackInvoker.exists(callbacksInstance, "teclad", acronym)) {
+
+            var oldHandler = checkBox.getOnKeyPressed();
+
+            var newHandler = (EventHandler<KeyEvent>) e -> {
+                publishEvent(EventType.TECLAD);
+                CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
+
+                if (oldHandler != null) {
+                    oldHandler.handle(e);
+                }
+            };
+
+            checkBox.setOnKeyPressed(newHandler);
+            unregisters.add(() -> checkBox.setOnKeyPressed(oldHandler));
+        }
+
+        return unregisters;
+    }
+
     @Override
     public List<Runnable> applyAltcamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
+        CheckBox checkBox = this.entry.getCheckBox();
 
         if (CallbackInvoker.exists(callbacksInstance, "altcam", acronym)) {
 
@@ -101,37 +119,6 @@ public class EventBinderCheckBox extends EventBinderEvents {
 
             checkBox.selectedProperty().addListener(selectedListener);
             unregisters.add(() -> checkBox.selectedProperty().removeListener(selectedListener));
-        }
-
-        return unregisters;
-    }
-
-    /**
-     * Aplica eventos de alteração de campo
-     * ---------- TECLA (teclad) ----------
-     * Se existir callback "teclad", registra um novo handler de tecla
-     * O callback recebe o KeyEvent também
-     * Mantém o handler antigo: chama o callback e depois o original
-     */
-    @Override
-    public List<Runnable> applyTecladEvent() {
-        List<Runnable> unregisters = new ArrayList<>();
-
-        if (CallbackInvoker.exists(callbacksInstance, "teclad", acronym)) {
-
-            var oldHandler = checkBox.getOnKeyPressed();
-
-            var newHandler = (EventHandler<KeyEvent>) e -> {
-                publishEvent(EventType.TECLAD);
-                // Passa o evento de tecla para o callback
-                CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
-
-                // Mantém o comportamento original do componente
-                if (oldHandler != null) oldHandler.handle(e);
-            };
-
-            checkBox.setOnKeyPressed(newHandler);
-            unregisters.add(() -> checkBox.setOnKeyPressed(oldHandler));
         }
 
         return unregisters;

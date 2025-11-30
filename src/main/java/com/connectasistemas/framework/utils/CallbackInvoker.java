@@ -75,7 +75,8 @@ public class CallbackInvoker {
                     } else {
                         m.invoke(callbacksInstance, screenInstance);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 return;
             }
         }

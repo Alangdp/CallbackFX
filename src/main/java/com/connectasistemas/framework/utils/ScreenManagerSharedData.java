@@ -6,8 +6,11 @@ import javafx.scene.layout.Region;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gerencia dados compartilhados entre telas
+ */
 public class ScreenManagerSharedData {
-    // Mapa de @Screen -> (String[Acronym] -> Node)
+    // Mapa de @Screen -> (Acronym -> Node)
     private static final Map<Object, Map<String, Node>> CACHE = new HashMap<>();
 
     /**

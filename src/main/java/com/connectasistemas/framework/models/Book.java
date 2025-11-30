@@ -1,9 +1,13 @@
 package com.connectasistemas.framework.models;
 
-import java.util.UUID;
+import java.time.LocalDateTime;
 
+/**
+ * Modelo de Livro
+ */
 public class Book {
-    private UUID id;
+
+    private Integer id;
     private String title;
     private String author;
     private String publisher;
@@ -15,13 +19,13 @@ public class Book {
     private String createdAt;
 
     public Book() {
+        this.createdAt = LocalDateTime.now().toString();
     }
 
     public Book(String title, String author, String publisher,
-                Integer year, String isbn, Integer pages,
-                String coverPath, Boolean available, String createdAt) {
+            Integer year, String isbn, Integer pages,
+            String coverPath, Boolean available) {
 
-        this.id = UUID.randomUUID();
         this.title = title;
         this.author = author;
         this.publisher = publisher;
@@ -30,11 +34,15 @@ public class Book {
         this.pages = pages;
         this.coverPath = coverPath;
         this.available = available;
-        this.createdAt = createdAt;
+        this.createdAt = LocalDateTime.now().toString();
     }
 
-    public UUID getId() {
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getTitle() {

@@ -7,6 +7,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+/**
+ * Componente que une um Label e um TextField
+ * OBS: Padroniza a forma de trabalhar com um texto horinzontal a um checkbox
+ * OBS: Eventos se aplicam ao HBox pai
+ */
 public class TextEntryLabel extends HBox {
 
     private final Label label;
@@ -23,7 +28,6 @@ public class TextEntryLabel extends HBox {
         getChildren().addAll(label, textField);
     }
 
-    // Getter simples
     public String getValue() {
         return textField.getText();
     }
