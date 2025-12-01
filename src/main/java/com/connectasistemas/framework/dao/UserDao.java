@@ -14,12 +14,15 @@ import java.util.List;
  */
 public interface UserDao {
 
+    @SqlQuery("SELECT seq + 1 FROM sqlite_sequence WHERE name = 'user'")
+    Integer nextId();
+
     /**
      * Insere um user (id deve ser UUID string)
      */
     @SqlUpdate("""
-                INSERT INTO user (id, name, age, student_id, password_hash, created_at)
-                VALUES (:id, :name, :age, :studentId, :passwordHash, :createdAt)
+                INSERT INTO user (id, name, age, student_id, password_hash, is_admin, created_at)
+                VALUES (:id, :name, :age, :studentId, :passwordHash, :admin, :createdAt)
             """)
     void insert(@BindBean User user);
 
@@ -29,6 +32,13 @@ public interface UserDao {
     @SqlQuery("SELECT * FROM user WHERE id = :id")
     @RegisterBeanMapper(User.class)
     User find(@Bind("id") String id);
+
+    /**
+     * Busca um user por studentId
+     */
+    @SqlQuery("SELECT * FROM user WHERE student_id = :studentId")
+    @RegisterBeanMapper(User.class)
+    User findByStudentId(@Bind("studentId") String studentId);
 
     /**
      * Retorna todos os users
@@ -46,6 +56,7 @@ public interface UserDao {
                     age = :age,
                     student_id = :studentId,
                     password_hash = :passwordHash,
+                    is_admin = :admin,
                     created_at = :createdAt
                 WHERE id = :id
             """)

@@ -19,6 +19,11 @@ public class ScreenManagerSharedData {
      */
     public static void resetScreenData(Object key) {
         CACHE.remove(key);
+        if (key instanceof Class<?> clazz) {
+            CACHE.remove(clazz);
+        } else if (key != null) {
+            CACHE.remove(key.getClass());
+        }
     }
 
     /**

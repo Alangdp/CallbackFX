@@ -2,13 +2,13 @@ package com.connectasistemas.framework.utils.validation;
 
 import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.enums.EventType;
-import com.connectasistemas.framework.enums.ValidationDataType;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.ValidationBinder;
 import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.MessageUtil;
 import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
@@ -48,23 +48,26 @@ public class ValidationBinderGeneric implements ValidationBinder {
         ValidationHandler handler = new ValidationHandler(screenInstance,
                 callbacksInstance,
                 acronym,
+                validation,
                 callbacksInstance != null && CallbackInvoker.exists(callbacksInstance, "valida", acronym));
 
         UnaryOperator<TextFormatter.Change> changeOperator = change -> {
             String newText = change.getControlNewText();
 
-            if (!withinMaxLength(newText, validation)) {
-                handler.publish(newText, false);
+            ValidationResult lengthResult = enforceMaxLength(newText, validation);
+            if (!lengthResult.valid()) {
+                handler.publish(newText, lengthResult, false);
                 return null;
             }
 
-            if (!matchesCharacterPolicy(newText, validation)) {
-                handler.publish(newText, false);
+            ValidationResult policyResult = validateCharacterPolicy(newText, validation);
+            if (!policyResult.valid()) {
+                handler.publish(newText, policyResult, false);
                 return null;
             }
 
-            boolean valid = evaluateText(newText, context);
-            handler.publish(newText, valid);
+            ValidationResult evaluation = evaluateText(newText, context);
+            handler.publish(newText, evaluation, false);
             return change;
         };
 
@@ -73,17 +76,17 @@ public class ValidationBinderGeneric implements ValidationBinder {
         control.focusedProperty().addListener((obs, oldV, newV) -> {
             if (!newV) {
                 String text = control.getText();
-                boolean valid = evaluateText(text, context);
-                handler.publishOnBlur(text, valid);
+                ValidationResult result = evaluateText(text, context);
+                handler.publishOnBlur(text, result);
             }
         });
 
         control.textProperty().addListener((obs, oldV, newV) -> {
-            boolean valid = evaluateText(newV, context);
-            handler.publish(newV, valid);
+            ValidationResult result = evaluateText(newV, context);
+            handler.publish(newV, result, false);
         });
 
-        handler.publish(control.getText(), evaluateText(control.getText(), context));
+        handler.publish(control.getText(), evaluateText(control.getText(), context), false);
         return true;
     }
 
@@ -160,17 +163,17 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param validation a anotação ScreenValidation contendo as regras
      * @return true se estiver dentro do limite, false caso contrário
      */
-    private boolean withinMaxLength(String text, ScreenValidation validation) {
+    private ValidationResult enforceMaxLength(String text, ScreenValidation validation) {
         if (validation.maxLength() < 0) {
-            return true;
+            return ValidationResult.VALID;
         }
 
         boolean withinLimit = text == null || text.length() <= validation.maxLength();
         if (!withinLimit) {
-            notifyValidationFailure(validation,
-                    StringUtils.concat("Valor deve ter no máximo ", validation.maxLength(), " caracteres."));
+            return ValidationResult.invalid(StringUtils.concat(
+                    "Valor deve ter no máximo ", validation.maxLength(), " caracteres."));
         }
-        return withinLimit;
+        return ValidationResult.VALID;
     }
 
     /**
@@ -180,47 +183,24 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param validation a anotação ScreenValidation contendo as regras
      * @return true se corresponder à política, false caso contrário
      */
-    private boolean matchesCharacterPolicy(String text, ScreenValidation validation) {
+    private ValidationResult validateCharacterPolicy(String text, ScreenValidation validation) {
         if (text == null || text.isEmpty()) {
-            return true;
+            return ValidationResult.VALID;
         }
 
-        ValidationDataType dataType = validation.dataType();
-        boolean allowed;
-        String failureMessage = null;
-
-        switch (dataType) {
-            case INTEGER -> {
-                allowed = text.matches("-?\\d*");
-                if (!allowed) {
-                    failureMessage = "Informe apenas números inteiros.";
-                }
-            }
-            case DECIMAL -> {
-                allowed = text.matches("-?\\d*(?:[\\.,]\\d*)?");
-                if (!allowed) {
-                    failureMessage = "Informe um número decimal válido.";
-                }
-            }
-            case DATE -> {
-                allowed = text.chars().allMatch(ch -> Character.isDigit(ch)
-                        || ch == '/' || ch == '-' || ch == '.' || Character.isWhitespace(ch));
-                if (!allowed) {
-                    failureMessage = "Informe a data usando apenas dígitos e separadores (/, -, .).";
-                }
-            }
-            case TEXT -> allowed = checkAllowances(text, validation);
-            default -> allowed = true;
-        }
-        ;
-
-        if (!allowed) {
-            if (failureMessage != null) {
-                notifyValidationFailure(validation, failureMessage);
-            }
-        }
-
-        return allowed;
+        return switch (validation.dataType()) {
+            case INTEGER -> text.matches("-?\\d*")
+                    ? ValidationResult.VALID
+                    : ValidationResult.invalid("Informe apenas números inteiros.");
+            case DECIMAL -> text.matches("-?\\d*(?:[\\.,]\\d*)?")
+                    ? ValidationResult.VALID
+                    : ValidationResult.invalid("Informe um número decimal válido.");
+            case DATE -> text.chars().allMatch(ch -> Character.isDigit(ch)
+                    || ch == '/' || ch == '-' || ch == '.' || Character.isWhitespace(ch))
+                    ? ValidationResult.VALID
+                    : ValidationResult.invalid("Informe a data usando apenas dígitos e separadores (/, -, .).");
+            case TEXT -> checkAllowances(text, validation);
+        };
     }
 
     /**
@@ -230,35 +210,31 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param validation a anotação ScreenValidation contendo as regras
      * @return true se o texto estiver em conformidade, false caso contrário
      */
-    private boolean checkAllowances(String text, ScreenValidation validation) {
+    private ValidationResult checkAllowances(String text, ScreenValidation validation) {
         for (char ch : text.toCharArray()) {
 
             // Valida se é um caractere E deve validar ser permitido
             if (Character.isLetter(ch) && !validation.allowLetters()) {
-                notifyValidationFailure(validation, "Letras não são permitidas para este campo.");
-                return false;
+                return ValidationResult.invalid("Letras não são permitidas para este campo.");
             }
 
             // Valida se é um dígito E deve validar ser permitido
             if (Character.isDigit(ch) && !validation.allowNumbers()) {
-                notifyValidationFailure(validation, "Números não são permitidos para este campo.");
-                return false;
+                return ValidationResult.invalid("Números não são permitidos para este campo.");
             }
 
             // Valida se é um espaço em branco E deve validar ser permitido
             if (Character.isWhitespace(ch) && !validation.allowWhitespace()) {
-                notifyValidationFailure(validation, "Espaços em branco não são permitidos para este campo.");
-                return false;
+                return ValidationResult.invalid("Espaços em branco não são permitidos para este campo.");
             }
 
             // Valida se é um símbolo E deve validar ser permitido
             if (!Character.isLetterOrDigit(ch) && !Character.isWhitespace(ch) && !validation.allowSymbols()) {
-                notifyValidationFailure(validation, "Símbolos não são permitidos para este campo.");
-                return false;
+                return ValidationResult.invalid("Símbolos não são permitidos para este campo.");
             }
         }
 
-        return true;
+        return ValidationResult.VALID;
     }
 
     /**
@@ -268,29 +244,27 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param context o contexto de validação contendo as regras
      * @return true se o texto for válido, false caso contrário
      */
-    private boolean evaluateText(String text, ValidationContext context) {
+    private ValidationResult evaluateText(String text, ValidationContext context) {
         ScreenValidation validation = context.validation();
 
         if (text == null || text.isEmpty()) {
             if (validation.required()) {
-                notifyValidationFailure(validation, "Campo obrigatório.");
-                return false;
+                return ValidationResult.invalid("Campo obrigatório.");
             }
-            return true;
+            return ValidationResult.VALID;
         }
 
         // Verifica comprimento mínimo
         if (validation.minLength() > 0 && text.length() < validation.minLength()) {
-            notifyValidationFailure(validation,
-                    StringUtils.concat("Valor deve conter pelo menos ", validation.minLength(), " caracteres."));
-            return false;
+            return ValidationResult.invalid(StringUtils.concat(
+                    "Valor deve conter pelo menos ", validation.minLength(), " caracteres."));
         }
 
         return switch (validation.dataType()) {
             case INTEGER -> evaluateInteger(text, validation);
             case DECIMAL -> evaluateDecimal(text, validation);
             case DATE -> evaluateDate(text, context);
-            case TEXT -> true;
+            case TEXT -> ValidationResult.VALID;
         };
     }
 
@@ -301,29 +275,26 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param validation as regras de validação
      * @return true se o texto for um inteiro válido, false caso contrário
      */
-    private boolean evaluateInteger(String text, ScreenValidation validation) {
+    private ValidationResult evaluateInteger(String text, ScreenValidation validation) {
         if ("-".equals(text) || "+".equals(text)) {
-            notifyValidationFailure(validation, "Informe um número inteiro válido.");
-            return false;
+            return ValidationResult.invalid("Informe um número inteiro válido.");
         }
 
         try {
             long value = Long.parseLong(text);
             if (value < validation.minValue()) {
-                notifyValidationFailure(validation,
-                        StringUtils.concat("Valor mínimo permitido é ", formatNumber(validation.minValue()), "."));
-                return false;
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Valor mínimo permitido é ", formatNumber(validation.minValue()), "."));
             }
 
             boolean withinMax = value <= validation.maxValue();
             if (!withinMax) {
-                notifyValidationFailure(validation,
-                        StringUtils.concat("Valor máximo permitido é ", formatNumber(validation.maxValue()), "."));
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Valor máximo permitido é ", formatNumber(validation.maxValue()), "."));
             }
-            return withinMax;
+            return ValidationResult.VALID;
         } catch (NumberFormatException ex) {
-            notifyValidationFailure(validation, "Valor inteiro inválido.");
-            return false;
+            return ValidationResult.invalid("Valor inteiro inválido.");
         }
     }
 
@@ -334,34 +305,30 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param validation as regras de validação
      * @return true se o texto for um decimal válido, false caso contrário
      */
-    private boolean evaluateDecimal(String text, ScreenValidation validation) {
+    private ValidationResult evaluateDecimal(String text, ScreenValidation validation) {
         if ("-".equals(text) || "+".equals(text) || ".".equals(text) || ",".equals(text)) {
-            notifyValidationFailure(validation, "Informe um valor decimal válido.");
-            return false;
+            return ValidationResult.invalid("Informe um valor decimal válido.");
         }
 
         try {
             double value = parseDecimal(text);
             if (Double.isNaN(value)) {
-                notifyValidationFailure(validation, "Valor decimal inválido.");
-                return false;
+                return ValidationResult.invalid("Valor decimal inválido.");
             }
 
             if (value < validation.minValue()) {
-                notifyValidationFailure(validation,
-                        StringUtils.concat("Valor mínimo permitido é ", formatNumber(validation.minValue()), "."));
-                return false;
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Valor mínimo permitido é ", formatNumber(validation.minValue()), "."));
             }
 
             boolean withinMax = value <= validation.maxValue();
             if (!withinMax) {
-                notifyValidationFailure(validation,
-                        StringUtils.concat("Valor máximo permitido é ", formatNumber(validation.maxValue()), "."));
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Valor máximo permitido é ", formatNumber(validation.maxValue()), "."));
             }
-            return withinMax;
+            return ValidationResult.VALID;
         } catch (NumberFormatException ex) {
-            notifyValidationFailure(validation, "Valor decimal inválido.");
-            return false;
+            return ValidationResult.invalid("Valor decimal inválido.");
         }
     }
 
@@ -387,45 +354,26 @@ public class ValidationBinderGeneric implements ValidationBinder {
      * @param context o contexto de validação
      * @return true se o texto for uma data válida, false caso contrário
      */
-    private boolean evaluateDate(String text, ValidationContext context) {
+    private ValidationResult evaluateDate(String text, ValidationContext context) {
         try {
             LocalDate value = LocalDate.parse(text, context.formatter());
 
             if (context.minDate() != null && value.isBefore(context.minDate())) {
-                notifyValidationFailure(context.validation(),
-                        StringUtils.concat("Data mínima permitida é ", context.formatter().format(context.minDate()),
-                                "."));
-                return false;
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Data mínima permitida é ", context.formatter().format(context.minDate()), "."));
             }
 
             if (context.maxDate() != null && value.isAfter(context.maxDate())) {
-                notifyValidationFailure(context.validation(),
-                        StringUtils.concat("Data máxima permitida é ", context.formatter().format(context.maxDate()),
-                                "."));
-                return false;
+                return ValidationResult.invalid(StringUtils.concat(
+                        "Data máxima permitida é ", context.formatter().format(context.maxDate()), "."));
             }
 
-            return true;
+            return ValidationResult.VALID;
         } catch (DateTimeParseException ex) {
             ScreenValidation validation = context.validation();
-            notifyValidationFailure(validation,
-                    StringUtils.concat("Data ", text, " é inválida. Use o formato ", validation.datePattern(), "."));
-            return false;
+            return ValidationResult.invalid(StringUtils.concat(
+                    "Data ", text, " é inválida. Use o formato ", validation.datePattern(), "."));
         }
-    }
-
-    /**
-     * Notifica falha de validação exibindo uma mensagem ao usuário, se configurado para tal
-     * 
-     * @param validation a anotação ScreenValidation contendo as regras
-     * @param message    a mensagem de falha a ser exibida
-     */
-    private void notifyValidationFailure(ScreenValidation validation, String message) {
-        if (!validation.showMessage()) {
-            return;
-        }
-
-        MessageUtil.warn("Validação", message);
     }
 
     /**
@@ -439,6 +387,14 @@ public class ValidationBinderGeneric implements ValidationBinder {
             return String.valueOf((long) value);
         }
         return String.valueOf(value);
+    }
+
+    private record ValidationResult(boolean valid, String message) {
+        static final ValidationResult VALID = new ValidationResult(true, null);
+
+        static ValidationResult invalid(String message) {
+            return new ValidationResult(false, message);
+        }
     }
 
     /**
@@ -458,43 +414,63 @@ public class ValidationBinderGeneric implements ValidationBinder {
         private final Object screenInstance;
         private final Object callbacksInstance;
         private final String acronym;
+        private final ScreenValidation validation;
         private final boolean hasValidationCallback;
 
         private String lastText;
         private Boolean lastValid;
+        private String lastMessage;
 
         private ValidationHandler(Object screenInstance,
                 Object callbacksInstance,
                 String acronym,
+                ScreenValidation validation,
                 boolean hasValidationCallback) {
             this.screenInstance = screenInstance;
             this.callbacksInstance = callbacksInstance;
             this.acronym = acronym;
+            this.validation = validation;
             this.hasValidationCallback = hasValidationCallback;
         }
 
-        private void publish(String text, boolean valid) {
-            publishInternal(text, valid, false);
+        private void publish(String text, ValidationResult result, boolean force) {
+            publishInternal(text, result, force);
         }
 
-        private void publishOnBlur(String text, boolean valid) {
-            publishInternal(text, valid, true);
+        private void publishOnBlur(String text, ValidationResult result) {
+            publishInternal(text, result, true);
         }
 
-        private void publishInternal(String text, boolean valid, boolean force) {
-            if (!force && Objects.equals(lastText, text) && Objects.equals(lastValid, valid)) {
-                return;
+        private void publishInternal(String text, ValidationResult result, boolean force) {
+            boolean sameState = Objects.equals(lastText, text)
+                    && Objects.equals(lastValid, result.valid())
+                    && Objects.equals(lastMessage, result.message());
+
+            if (sameState) {
+                if (!force) {
+                    return;
+                }
+
+                if (force && (result.message() == null || result.message().isBlank())) {
+                    return;
+                }
             }
 
             lastText = text;
-            lastValid = valid;
+            lastValid = result.valid();
+            lastMessage = result.message();
 
             Status.EVENT = EventType.VALIDA;
-            Status.VALIDA = valid;
+            Status.VALIDA = result.valid();
 
             if (hasValidationCallback) {
                 String safeText = text == null ? "" : text;
-                CallbackInvoker.call(callbacksInstance, screenInstance, "valida", acronym, valid, safeText);
+                CallbackInvoker.call(callbacksInstance, screenInstance, "valida", acronym, result.valid(), safeText);
+            }
+
+            if (!result.valid() && validation.showMessage() && force && result.message() != null
+                    && !result.message().isBlank()) {
+                Platform.runLater(() -> MessageUtil.warn("Validação", result.message()));
             }
         }
     }

@@ -24,6 +24,10 @@ public class Status {
     // Último campo processado de tela
     public static Object NODE;
 
+    // Indica se o usuário confirmou uma seleção de diálogo
+    public static boolean CONFIRMED_SELECTION;
+
+    // Indica se a validação deve ser ignorada na próxima verificação
     private static boolean SKIP_VALIDATION;
 
     /**

@@ -1,6 +1,6 @@
 package com.connectasistemas.framework.models;
 
-import java.time.LocalDateTime;
+import com.connectasistemas.framework.utils.DateTimeUtils;
 
 /**
  * Modelo de Livro
@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 public class Book {
 
     private Integer id;
+    private Integer groupCode;
+    private Integer sequence;
     private String title;
     private String author;
     private String publisher;
@@ -19,7 +21,7 @@ public class Book {
     private String createdAt;
 
     public Book() {
-        this.createdAt = LocalDateTime.now().toString();
+        this.createdAt = DateTimeUtils.currentTimestamp();
     }
 
     public Book(String title, String author, String publisher,
@@ -34,7 +36,7 @@ public class Book {
         this.pages = pages;
         this.coverPath = coverPath;
         this.available = available;
-        this.createdAt = LocalDateTime.now().toString();
+        this.createdAt = DateTimeUtils.currentTimestamp();
     }
 
     public Integer getId() {
@@ -43,6 +45,22 @@ public class Book {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public Integer getGroupCode() {
+        return groupCode;
+    }
+
+    public void setGroupCode(Integer groupCode) {
+        this.groupCode = groupCode;
+    }
+
+    public Integer getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(Integer sequence) {
+        this.sequence = sequence;
     }
 
     public String getTitle() {
@@ -114,6 +132,13 @@ public class Book {
     }
 
     public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = DateTimeUtils.normalizeTimestamp(createdAt);
+    }
+
+    public String getCompositeCode() {
+        if (groupCode == null || sequence == null) {
+            return id == null ? null : id.toString();
+        }
+        return groupCode + String.format("%03d", sequence);
     }
 }

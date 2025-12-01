@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 /**
  * Gerenciador da tela
@@ -46,6 +47,10 @@ public class ScreenManager {
 
     private static final ValidationBinderGeneric validationBinderGeneric = new ValidationBinderGeneric();
 
+    private static boolean changeInProgress;
+    private static Class<?> deferredScreenClass;
+    private static final Stack<Class<?>> screenHistory = new Stack<>();
+
     // Armazena o stage na inicialização
     public static void init(Stage stage) {
         mainStage = stage;
@@ -59,10 +64,38 @@ public class ScreenManager {
 
     // Troca a tela para outra classe anotada com @Screen
     public static void changeTo(Class<?> screenClass) {
+        if (screenClass == null) {
+            return;
+        }
+
+        if (changeInProgress) {
+            deferredScreenClass = screenClass;
+            return;
+        }
+
+        changeInProgress = true;
+        try {
+            Class<?> nextScreen = screenClass;
+            while (nextScreen != null) {
+                deferredScreenClass = null;
+                performScreenChange(nextScreen);
+                nextScreen = deferredScreenClass;
+            }
+        } finally {
+            changeInProgress = false;
+        }
+    }
+
+    /**
+     * Realiza a troca de tela para a classe especificada.
+     * @param screenClass Classe da tela para a qual se deseja trocar.
+     */
+    private static void performScreenChange(Class<?> screenClass) {
         try {
             // Limpa referência de elementos relacionados a tela antiga
             clearPreviousScreen();
 
+            Object previousInstance = screenInstance;
             screenInstance = screenClass.getDeclaredConstructor().newInstance();
 
             // Processa anotações
@@ -156,10 +189,38 @@ public class ScreenManager {
             // Troca a cena
             Scene scene = new Scene(root);
             invokeScreenInitializationCallback(screenClass, meta);
+
+            if (deferredScreenClass != null) {
+                return;
+            }
+
+            if (previousInstance != null && previousInstance.getClass() != screenClass) {
+                screenHistory.push(previousInstance.getClass());
+            }
+
             mainStage.setScene(scene);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Verifica se é possível retornar para a tela anterior no histórico.
+     */
+    public static boolean canGoBack() {
+        return !screenHistory.isEmpty();
+    }
+
+    /**
+     * Retorna para a tela anterior no histórico, se possível.
+     */
+    public static void goBack() {
+        if (!canGoBack()) {
+            return;
+        }
+
+        Class<?> previous = screenHistory.pop();
+        changeTo(previous);
     }
 
     /**
@@ -342,6 +403,39 @@ public class ScreenManager {
         if (node != null) {
             node.setDisable(true);
         }
+    }
+
+    /**
+     * Ajusta a visibilidade de um elemento identificado pelo acronym.
+     * Quando invisível, o elemento também deixa de ser gerenciado pelo layout.
+     *
+     * @param screenClass classe da view anotada com {@code @Screen}
+     * @param acronym     identificador configurado em {@code @ScreenField}
+     * @param visible     define se o elemento deve permanecer visível e gerenciado
+     */
+    public static void setNodeVisibility(Class<?> screenClass, String acronym, boolean visible) {
+        if (screenClass == null || StringUtils.isBlank(acronym)) {
+            return;
+        }
+
+        Node node = ScreenManagerSharedData.getScreenData(screenClass, acronym);
+        setNodeVisibility(node, visible);
+    }
+
+    /**
+     * Ajusta a visibilidade de um elemento já referenciado.
+     * Quando invisível, deixa de ser gerenciado pelo layout.
+     *
+     * @param node    elemento JavaFX alvo
+     * @param visible define se o elemento deve permanecer visível e gerenciado
+     */
+    public static void setNodeVisibility(Node node, boolean visible) {
+        if (node == null) {
+            return;
+        }
+
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private static void enableAncestors(Parent parent) {

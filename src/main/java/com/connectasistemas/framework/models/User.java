@@ -1,6 +1,9 @@
 package com.connectasistemas.framework.models;
 
-import java.time.LocalDateTime;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
+
+import com.connectasistemas.framework.utils.DateTimeUtils;
+import com.connectasistemas.framework.utils.PasswordAuthentication;
 
 /**
  * Modelo de Usuário
@@ -12,23 +15,39 @@ public class User {
     private Integer age;
     private String studentId;
     private String passwordHash;
-    private LocalDateTime createdAt;
+    private String createdAt;
+    @ColumnName("is_admin")
+    private boolean admin;
 
     public User() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = DateTimeUtils.currentTimestamp();
+        this.admin = false;
     }
 
     public User(String name, Integer age, String studentId,
-            String passwordHash) {
+            String password) {
+        this(name, age, studentId, password, false);
+    }
+
+    public User(String name, Integer age, String studentId,
+            String password, boolean admin) {
+        this();
+        PasswordAuthentication pa = new PasswordAuthentication();
+        String passwordHash = pa.hash(password.toCharArray());
+
         this.name = name;
         this.age = age;
         this.studentId = studentId;
         this.passwordHash = passwordHash;
-        this.createdAt = LocalDateTime.now();
+        this.admin = admin;
     }
 
     public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -63,7 +82,21 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public String getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = DateTimeUtils.normalizeTimestamp(createdAt);
+    }
+
+    @ColumnName("is_admin")
+    public boolean isAdmin() {
+        return admin;
+    }
+
+    @ColumnName("is_admin")
+    public void setAdmin(boolean admin) {
+        this.admin = admin;
     }
 }

@@ -52,12 +52,25 @@ public class Main {
         );
 
         // Inserção
+        int g1 = bookDao.nextId();
+        b1.setGroupCode(g1);
+        b1.setSequence(0);
         bookDao.insert(b1);
+
+        int g2 = bookDao.nextId();
+        b2.setGroupCode(g2);
+        b2.setSequence(0);
         bookDao.insert(b2);
+
+        int g3 = bookDao.nextId();
+        b3.setGroupCode(g3);
+        b3.setSequence(0);
         bookDao.insert(b3);
 
-        User userTest = new User("Alan", 20, "12345", "ad2w313231");
+        User userTest1 = new User("Alan", 20, "0420527", "teste123", true);
+        User userTest2 = new User("Alan", 20, "0420528", "teste123", false);
 
-        userDao.insert(userTest);
+        userDao.insert(userTest1);
+        userDao.insert(userTest2);
     }
 }

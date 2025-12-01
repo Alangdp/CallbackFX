@@ -96,7 +96,9 @@ public class EventBinder {
             for (Runnable r : entry.getValue()) {
                 try {
                     r.run();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    ignored.printStackTrace();
+                }
             }
         }
 

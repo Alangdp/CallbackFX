@@ -5,7 +5,7 @@ import com.connectasistemas.framework.annotation.ScreenField;
 import com.connectasistemas.framework.annotation.ScreenFieldPosition;
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
 import com.connectasistemas.framework.annotation.ScreenValidation;
-import com.connectasistemas.framework.controller.HomeController;
+import com.connectasistemas.framework.controller.BookMaintenanceController;
 import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.enums.ValidationDataType;
 import com.connectasistemas.framework.fxelements.CheckEntryLabel;
@@ -17,8 +17,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-@Screen(title = "Manutenção de livros", width = 540, height = 480, callbacks = HomeController.class, region = BorderPane.class)
-public class HomeView {
+@Screen(title = "Manutenção de livros", width = 540, height = 500, callbacks = BookMaintenanceController.class, region = BorderPane.class)
+public class BookMaintenanceView {
     
     @ScreenField(acronym = "contentContainer", order = 1, position = Position.CENTER)
     @ScreenFieldPosition(alignment = Position.LEFT)
@@ -27,7 +27,7 @@ public class HomeView {
 
     @ScreenField(acronym = "bottomContainer", order = 2, position = Position.BOTTOM)
     @ScreenFieldPosition(alignment = Position.BOTTOM)
-    @ScreenFieldSize(maxWidth = true, height = 45, padding = {30, 30, 30, 30}, spacing = 10, vgrow = true)
+    @ScreenFieldSize(maxWidth = true, height = 45, padding = {50, 30, 30, 30}, spacing = 10, vgrow = true)
     public HBox bottomContainer;
 
     @ScreenField(acronym = "bottomSpacer", father = "bottomContainer", order = 1)
@@ -57,7 +57,7 @@ public class HomeView {
 
     @ScreenField(acronym = "bookCode", father = "leftVBox", literal = "Código", order = 1)
     @ScreenFieldSize(labelWidth = 60, maxWidth = true)
-    @ScreenValidation(maxLength = 4, allowSymbols = false, allowLetters = false)
+    @ScreenValidation(maxLength = 7, allowSymbols = false, allowLetters = false)
     public TextEntryLabel bookCode;
 
     @ScreenField(acronym = "bookTitle", father = "leftVBox", literal = "Nome", order = 2)
@@ -115,4 +115,9 @@ public class HomeView {
     @ScreenFieldSize(labelWidth = 65, maxWidth = true)
     @ScreenValidation(maxLength = 5, allowSymbols = false)
     public CheckEntryLabel bookAvailable;
+
+    @ScreenField(acronym = "bookQuantity", father = "rightVBox", literal = "Qtd.", order = 5)
+    @ScreenFieldSize(labelWidth = 65, maxWidth = true)
+    @ScreenValidation(dataType = ValidationDataType.INTEGER, maxLength = 3, minValue = 1, maxValue = 999, allowLetters = false, allowSymbols = false)
+    public TextEntryLabel bookQuantity;
 }

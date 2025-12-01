@@ -18,7 +18,7 @@ public class LoginView {
 
     @ScreenField(acronym = "rootContainer")
     @ScreenFieldPosition(alignment = Position.CENTER)
-    @ScreenFieldSize(maxWidth = true, padding = {50, 20, 20, 20}, spacing = 20)
+    @ScreenFieldSize(maxWidth = true, padding = { 50, 20, 20, 20 }, spacing = 20)
     public VBox rootContainer;
 
     // Título da tela
@@ -39,12 +39,12 @@ public class LoginView {
     @ScreenFieldSize(spacing = 10)
     public VBox usernameContainer;
 
-    @ScreenField(acronym = "usernameLabel", father = "usernameContainer", literal = "Usuário:", order = 1)
-    public Label usernameLabel;
+    @ScreenField(acronym = "studentCodeLabel", father = "usernameContainer", literal = "Código:", order = 1)
+    public Label studentCodeLabel;
 
-    @ScreenField(acronym = "usernameField", father = "usernameContainer", literal = "Usuário:", order = 2)
-    @ScreenValidation(required = true, minLength = 3, maxLength = 40, allowWhitespace = false, allowSymbols = false)
-    public TextField usernameField;
+    @ScreenField(acronym = "studentCodeField", father = "usernameContainer", literal = "Código:", order = 2)
+    @ScreenValidation(required = true, minLength = 3, maxLength = 40, allowWhitespace = true, allowSymbols = false, showMessage = true)
+    public TextField studentCodeField;
 
     // Campos de senha
     @ScreenField(acronym = "passwordContainer", father = "dataContainer", order = 2)

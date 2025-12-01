@@ -18,13 +18,14 @@ public interface BorrowHistoryDao {
      * Insere um registro de retirada; returned_at pode ser null
      */
     @SqlUpdate("""
-                INSERT INTO borrow_history (user_id, book_id, borrowed_at, returned_at)
-                VALUES (:userId, :bookId, :borrowedAt, :returnedAt)
+                INSERT INTO borrow_history (user_id, book_id, borrowed_at, due_at, returned_at)
+                VALUES (:userId, :bookId, :borrowedAt, :dueAt, :returnedAt)
             """)
     void insert(@Bind("userId") String userId,
                 @Bind("bookId") String bookId,
                 @Bind("borrowedAt") String borrowedAt,
-                @Bind("returnedAt") String returnedAt);
+                    @Bind("dueAt") String dueAt,
+                    @Bind("returnedAt") String returnedAt);
 
     /**
      * Busca um registro pelo id
@@ -64,6 +65,15 @@ public interface BorrowHistoryDao {
     @RegisterBeanMapper(Book.class)
     List<Book> findBooksBorrowedByUser(@Bind("userId") String userId);
 
+        @SqlQuery("""
+                    SELECT * FROM borrow_history
+                    WHERE book_id = :bookId AND (returned_at IS NULL OR trim(returned_at) = '')
+                    ORDER BY borrowed_at DESC
+                    LIMIT 1
+                """)
+        @RegisterBeanMapper(BorrowHistory.class)
+        BorrowHistory findActiveBorrowByBook(@Bind("bookId") int bookId);
+
     /**
      * Marca devolução: define returned_at para o registro
      */
@@ -75,4 +85,13 @@ public interface BorrowHistoryDao {
      */
     @SqlUpdate("DELETE FROM borrow_history WHERE user_id = :userId")
     void deleteByUser(@Bind("userId") String userId);
+
+    @SqlQuery("SELECT COUNT(*) FROM borrow_history WHERE book_id = :bookId")
+    int countByBook(@Bind("bookId") int bookId);
+
+    @SqlQuery("""
+                SELECT COUNT(*) FROM borrow_history
+                WHERE book_id = :bookId AND (returned_at IS NULL OR trim(returned_at) = '')
+            """)
+    int countActiveByBook(@Bind("bookId") int bookId);
 }

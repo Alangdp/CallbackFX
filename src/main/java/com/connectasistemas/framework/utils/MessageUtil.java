@@ -1,21 +1,23 @@
 package com.connectasistemas.framework.utils;
 
+import java.util.Optional;
+
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+
+import com.connectasistemas.framework.enums.FocusExitReason;
 
 /**
  * Utilitário para exibir mensagens no JavaFX.
  * Fornece métodos rápidos para alerts já estilizados.
  */
 public class MessageUtil {
-
-    // Estilo simples aplicado no Alert
-    private static final String DEFAULT_STYLE =
-            "-fx-font-size: 14px;" +
-                    "-fx-background-color: #2b2b2b;" +
-                    "-fx-text-fill: #ffffff;";
-
     /**
      * Exibe um alerta de informação.
      *
@@ -28,7 +30,6 @@ public class MessageUtil {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -44,7 +45,6 @@ public class MessageUtil {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -60,23 +60,49 @@ public class MessageUtil {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        applyStyle(alert);
         alert.showAndWait();
     }
 
     /**
-     * Aplica o estilo padrão ao Alert.
+     * Exibe um alerta de confirmação com botões Confirmar e Cancelar.
+     * O diálogo respeita a tecla ESC como atalho para cancelar.
      *
-     * @param alert Alert a estilizar
+     * @param title   Título da janela
+     * @param message Mensagem apresentada no corpo do alerta
+     * @return true quando o usuário confirma; false caso contrário
      */
-    private static void applyStyle(Alert alert) {
-        // Aplica CSS diretamente no DialogPane
-        DialogPane pane = alert.getDialogPane();
-        pane.setStyle(DEFAULT_STYLE);
+    public static boolean confirm(String title, String message) {
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
 
-        // Garante que botões também recebem o tema
-        pane.lookup(".content.label").setStyle("-fx-text-fill: white;");
-        pane.lookupButton(javafx.scene.control.ButtonType.OK)
-                .setStyle("-fx-background-color: #444; -fx-text-fill: white;");
+        ButtonType confirmButton = new ButtonType("Confirmar", ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancelar", ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(confirmButton, cancelButton);
+
+        DialogPane dialogPane = alert.getDialogPane();
+        Button cancelNode = (Button) dialogPane.lookupButton(cancelButton);
+        // Trata a tecla ESC como ação de cancelamento explícita
+        dialogPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                Status.CONFIRMED_SELECTION = false;
+                Status.registerExitReason(FocusExitReason.ESC);
+                if (cancelNode != null) {
+                    cancelNode.fire();
+                } else {
+                    alert.hide();
+                }
+                event.consume();
+            }
+        });
+
+        Optional<ButtonType> result = alert.showAndWait();
+        boolean confirmed = result.isPresent() && result.get() == confirmButton;
+        Status.CONFIRMED_SELECTION = confirmed;
+        if (Status.EXIT_REASON != FocusExitReason.ESC) {
+            Status.registerExitReason(FocusExitReason.OTHER);
+        }
+        return confirmed;
     }
 }

@@ -30,12 +30,12 @@ public class ElementManager {
         registry.put(CheckBox.class, CheckBox::new);
         registry.put(PasswordField.class, PasswordField::new);
         registry.put(Button.class,  Button::new);
+        registry.put(TableView.class, TableView::new);
 
         // Registros personalizados
         registry.put(TextEntryLabel.class, () -> new TextEntryLabel(literal));
         registry.put(CheckEntryLabel.class, () -> new CheckEntryLabel(literal));
-
-        registry.put(ImageView.class, () -> new ImageView("https://fastly.picsum.photos/id/335/200/300.jpg?hmac=G81PbTg8uAk00mCq0eZdiTJwpa_-_FvFZJVhEGcouXQ"));
+        registry.put(ImageView.class, ImageView::new);
 
         // Criação de Region
         registry.put(Region.class, Region::new);

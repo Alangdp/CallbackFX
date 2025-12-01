@@ -28,10 +28,6 @@ public class CheckEntryLabel extends HBox {
         getChildren().addAll(label, checkBox);
     }
 
-    public String getValue() {
-        return Boolean.toString(checkBox.isSelected());
-    }
-
     public boolean isSelected() {
         return checkBox.isSelected();
     }
