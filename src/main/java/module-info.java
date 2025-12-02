@@ -2,14 +2,15 @@ module com.connectasistemas.framework {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.graphics;
-    requires org.jdbi.v3.sqlobject;
-    requires org.jdbi.v3.core;
-    requires java.sql;
-    requires atlantafx.base;
 
-    opens com.connectasistemas.framework to javafx.fxml;
-    opens com.connectasistemas.framework.models to org.jdbi.v3.core;
-
-    exports com.connectasistemas.framework;
-    exports com.connectasistemas.framework.models;
+    exports com.connectasistemas.framework.annotation;
+    exports com.connectasistemas.framework.enums;
+    exports com.connectasistemas.framework.fxelements;
+    exports com.connectasistemas.framework.interfaces;
+    exports com.connectasistemas.framework.processor;
+    exports com.connectasistemas.framework.utils;
+    exports com.connectasistemas.framework.utils.events;
+    exports com.connectasistemas.framework.utils.position;
+    exports com.connectasistemas.framework.utils.sizes;
+    exports com.connectasistemas.framework.utils.validation;
 }
