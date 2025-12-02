@@ -1,107 +1,36 @@
-# Framework de Callbacks para JavaFX
+# Relatório Técnico — CallbackFX
 
-Este repositório reúne um microframework experimental para acelerar a criação de telas JavaFX dirigidas por callbacks nomeados. A ideia é aproximar o modelo do que seria um "function set": você descreve a tela com anotações, aponta um controller com métodos convencionados e o framework cuida de instanciar campos, ligar eventos e encaminhar os callbacks corretos.
+## Objetivo e modelagem do projeto
+O projeto CallbackFX propõe um framework acadêmico para construção rápida de telas JavaFX baseadas em anotações. A modelagem se ancora em quatro camadas principais:
+- **Anotações de tela:** `@Screen`, `@ScreenField` e correlatas descrevem layout, dimensões e mapeamento de componentes, permitindo que o `AnnotationProcessor` gere a infraestrutura de binding sem codificação manual de FXML.
+- **Function Set:** o conceito de `WindowFunction` agrupa os modos de operação (consulta, cadastro, edição e exclusão) e, aliado ao `AcceptMode`, controla automaticamente qual subconjunto de campos fica disponível em cada fluxo de trabalho.
+- **Orquestração de eventos:** `ScreenManager`, `EventBinder` e `CallbackInvoker` mantêm o ciclo de vida das janelas, aplicam temas (PrimerLight) e interligam eventos JavaFX aos callbacks nomeados conforme convenção (`callback<Prefixo><Campo>`).
+- **Persistência modularizada:** os DAOs Jdbi (`BookDao`, `UserDao`, `BorrowHistoryDao`) isolam regras de acesso ao banco SQLite, enquanto modelos (`Book`, `User`, `BorrowHistory`) materializam as entidades centrais para o Function Set e para o catálogo de livros.
 
-## Visão geral
-- **Declaração com anotações**: marque classes de tela com `@Screen` e campos com `@ScreenField` para informar título, tamanho e os componentes que devem ser exibidos.
-- **Callbacks determinísticos**: em vez de lidar com múltiplos listeners JavaFX manualmente, basta implementar métodos com o prefixo esperado (ex.: `callbackEntcamNome`).
-- **Binding automático de eventos**: `EventBinder` conecta os eventos JavaFX básicos (foco, alteração de texto, teclado) com os callbacks detectados.
-- **Construção dinâmica de UI**: `ScreenManager` reflete as anotações e cria os componentes suportados (`TextField`, `Label`, `CheckBox` por padrão) usando `ElementManager`.
+O fluxo padrão inicia pelo `StartApplication`, que prepara o tema, inicializa o `ScreenManager` e direciona o usuário para a `WithdrawView`. A transição para as demais telas ocorre via rotas controladas, garantindo que a mesma base de callbacks sirva tanto ao conjunto de funções administrativas quanto às operações do acervo de livros.
 
-## Arquitetura rápida
-1. `HelloApplication` inicializa o `ScreenManager` e solicita a troca para a primeira tela (`HomeView`).
-2. `ScreenManager` instancia a view, dispara `AnnotationProcessor` e recebe um `ScreenMetadata` com título, dimensões, campos e controller.
-3. Para cada campo anotado, `ElementManager` cria o `Node` correspondente e `EventBinder` registra os listeners necessários.
-4. Quando um evento do JavaFX dispara, `EventBinder` delega para `CallbackInvoker`, que monta o nome do método e o executa na instância do controller.
+## Requisitos funcionais
+- **Autenticação e sessão:** tela de login (`LoginView`) com persistência de usuário logado em `UserData` e redirecionamento automático para dashboard ou manutenção, conforme função selecionada.
+- **Function Set administrativo:** cadastro, consulta, atualização e exclusão de usuários e livros configurados por `WindowFunction`, com retorno opcional à tela anterior e controle dinâmico de habilitação de campos (`acceptKey`/`acceptData`).
+- **Gestão de acervo:** manutenção de livros com agrupamento por código de coleção (`BookCodeUtils`), replicação de exemplares, validações de ISBN/ano/páginas e exibição de capas padrão.
+- **Retirada e devolução de livros:** fluxo em `WithdrawController` que identifica livros por código, ISBN ou sequência, verifica disponibilidade, registra empréstimos e devoluções, e alerta usuários não autenticados.
+- **Dashboard contextual:** painel administrativo com visão de usuários e livros agrupados; painel do leitor com histórico, estado de cada empréstimo e destaque de atrasos segundo regras de 14 dias.
 
-Os principais pacotes ficam em `src/main/java/com/connectasistemas/framework`:
-- `annotation`: define `@Screen` e `@ScreenField`.
-- `processor`: lê as anotações e produz `ScreenMetadata`.
-- `utils`: concentra `ScreenManager`, `ElementManager`, `EventBinder`, `CallbackInvoker` e `ScreenMetadata`.
-- `controller` e `view`: exemplo funcional (`HomeController`/`HomeView`).
+## Requisito técnico
+- Implementação em Java 17 com modularização (`module-info.java`) e build Maven (`mvnw`) para facilitar a reprodução do ambiente.
+- Interface gráfica em JavaFX 17, estilizada pelo tema `atlantafx-base`, sem necessidade de arquivos FXML graças ao processador de anotações.
+- Persistência desacoplada através do Jdbi 3 (módulos `core`, `sqlobject`, `sqlite`, `jpa`) conectada a banco SQLite (`sqlite-jdbc`), com singletons (`DatabaseManager`, `DaoFactory`) para gestão do ciclo de vida das conexões.
+- Tratamento de callbacks e elementos customizados via components JavaFX (`TextEntryLabel`, `CheckEntryLabel`) para garantir consistência nas telas geradas.
+- Execução padronizada pelo plugin `javafx-maven-plugin`, permitindo `mvn clean javafx:run` como ponto único de inicialização do protótipo.
 
-## Convenção de callbacks
-Cada método do controller segue o padrão `callback<Prefixo><NomeDoCampo>`. O nome do campo vem da sigla (`acronym`) declarada no `@ScreenField`. Prefixos suportados:
+## Limitações e trabalhos futuros
+- Validação de dados distribuída entre controladores; sugere-se consolidar regras em camada dedicada para reuso entre Function Set e operações de empréstimo.
+- Falta de testes automatizados para DAOs e fluxos críticos (login, retirada), o que dificulta regressão controlada.
+- Ausência de controle de concorrência ou bloqueio otimista nas transações de livros; múltiplas retiradas simultâneas podem gerar inconsistências.
+- Gestão de arquivos de capa centrada em recursos estáticos; futuros trabalhos podem integrar upload dinâmico e armazenamento externo.
+- Necessidade de internacionalização e acessibilidade na camada de apresentação, hoje focada exclusivamente em português e teclado padrão.
+- Criação de novas Entrys do framework e mais compoenentes complexos.
 
-| Evento | Descrição | Método esperado |
-| --- | --- | --- |
-| `entcam` | Foco entrou no campo | `callbackEntcamNome` |
-| `saicam` | Foco saiu do campo | `callbackSaicamNome` |
-| `teclad` | Tecla pressionada | `callbackTecladNome` |
-| `altcam` | Texto alterado | `callbackAltcamNome` |
-| `valida` | Ponto de validação (reservado) | `callbackValidaNome` |
-| `prebrw`/`posbrw` | Pré/Pós abertura de browse | `callbackPrebrwNome` / `callbackPosbrwNome` |
+## UML
 
-> Os prefixos adicionais já estão previstos em `CallbackInvoker` e podem ser implementados gradualmente.
-
-## Exemplo rápido
-### View anotada
-```java
-@Screen(title = "Home", callbacks = HomeController.class)
-public class HomeView {
-
-	@ScreenField(acronym = "nome")
-	private TextField nome;
-
-	@ScreenField(acronym = "cend")
-	private TextField endereco;
-}
-```
-
-### Controller com callbacks
-```java
-public class HomeController {
-
-	public void callbackEntcamNome(HomeView screen) {
-		System.out.println("Entrou nome");
-	}
-
-	public void callbackSaicamNome(HomeView screen) {
-		System.out.println("Saiu nome");
-	}
-
-	public void callbackTecladNome(HomeView screen, KeyEvent e) {
-		System.out.println("Tecla: " + e.getCode());
-	}
-}
-```
-
-## Executando o projeto
-Requisitos mínimos:
-- JDK 17+
-- Maven 3.9+ (o wrapper `mvnw` já está configurado)
-- JavaFX 17 (trazido via dependências do Maven)
-
-### Windows (PowerShell)
-```powershell
-cd c:\Users\alang\Documents\Feevale\EstruturaDados\framework
-./mvnw.cmd clean javafx:run
-```
-
-### Linux/MacOS
-```bash
-cd /path/para/framework
-./mvnw clean javafx:run
-```
-
-O plugin `javafx-maven-plugin` já aponta para `com.connectasistemas.framework.HelloApplication`, então o comando acima abre a tela exemplo com os `TextField`s e callbacks demonstrados.
-
-## Como criar novas telas
-1. **Declare a view**: crie uma classe em `view/`, anote com `@Screen` e liste o controller responsável em `callbacks`.
-2. **Mapeie os campos**: para cada componente que deve ser manipulado, adicione `@ScreenField(acronym = "sigla")`.
-3. **Implemente o controller**: coloque os métodos `callback<Prefixo><SiglaCapitalizada>` necessários. O primeiro parâmetro sempre é a instância da view; adicione parâmetros extra conforme o evento.
-4. **Atualize o bootstrap**: chame `ScreenManager.changeTo(SuaView.class)` para abrir a nova tela.
-
-## Extensões possíveis
-- **Novos componentes**: registre um `Supplier<Node>` em `ElementManager.registry` para suportar outros controles JavaFX.
-- **Mais eventos**: adicione novos prefixos em `EventBinder` e reutilize `CallbackInvoker` para a resolução dinâmica.
-- **Layout customizado**: substituir o `HBox` padrão por containers declarados via anotação (ex.: apontar um `BorderPane` e posições específicas).
-- **Validações e estados**: implementar os prefixos reservados (`valida`, `outace`, etc.) para fluxos de negócios mais completos.
-
-## Roadmap / ideias
-- Suporte a hierarquias de layout e posicionamento configuráveis.
-- Registro declarativo de máscaras/bindings de dados.
-- Tooling para gerar controllers a partir da convenção de nomes.
-- Mecanismo de hot-reload de callbacks durante o desenvolvimento.
-
-Contribuições, feedbacks e ideias são bem-vindos para evoluir esse "function set" inspirado em frameworks legados, mas com a flexibilidade do Java moderno.
+![alt text](image.png)
