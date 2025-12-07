@@ -8,6 +8,8 @@ public enum EventType {
     SAICAM,
     ALTCAM,
     TECLAD,
+    CLICK,
+    DOUBLE_CLICK,
     VALIDA,
     AVANCA,
 

@@ -129,19 +129,16 @@ public class EventBinderTextEntryLabel extends EventBinderEvents {
 
         if (CallbackInvoker.exists(callbacksInstance, "teclad", acronym)) {
 
-            var oldHandler = txt.getOnKeyPressed();
-
-            var newHandler = (EventHandler<KeyEvent>) e -> {
+            EventHandler<KeyEvent> handler = e -> {
+                if (e.getEventType() != KeyEvent.KEY_RELEASED) {
+                    return;
+                }
                 publishEvent(EventType.TECLAD);
-                // Passa o evento de tecla para o callback
                 CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
-
-                // Mantém o comportamento original do componente
-                if (oldHandler != null) oldHandler.handle(e);
             };
 
-            txt.setOnKeyPressed(newHandler);
-            unregisters.add(() -> txt.setOnKeyPressed(oldHandler));
+            txt.addEventHandler(KeyEvent.KEY_RELEASED, handler);
+            unregisters.add(() -> txt.removeEventHandler(KeyEvent.KEY_RELEASED, handler));
         }
 
         return unregisters;

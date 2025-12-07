@@ -8,6 +8,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 
 import java.util.*;
@@ -70,12 +71,15 @@ public class EventBinder {
             binder = new EventBinderTextEntryLabel(acronym, txt, screenInstance, callbacksInstance);
         } else if (node instanceof CheckEntryLabel checkEntry) {
             binder = new EventBinderCheckEntryLabel(acronym, checkEntry, screenInstance, callbacksInstance);
+        } else if (node instanceof ListView<?> listView) {
+            binder = new EventBinderListView(acronym, listView, screenInstance, callbacksInstance);
         }
 
         if (binder != null) {
             unregisters.addAll(binder.applyEntcamSaicamEvent());
             unregisters.addAll(binder.applyAltcamEvent());
             unregisters.addAll(binder.applyTecladEvent());
+            unregisters.addAll(binder.applyCustomEvents());
         }
 
         // Salva no registro

@@ -12,6 +12,7 @@ import javafx.scene.input.KeyEvent;
 
 import javafx.event.EventHandler;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,6 +27,9 @@ public abstract class EventBinderEvents {
     public abstract List<Runnable> applyEntcamSaicamEvent();
     public abstract List<Runnable> applyTecladEvent();
     public abstract List<Runnable> applyAltcamEvent();
+    public List<Runnable> applyCustomEvents() {
+        return Collections.emptyList();
+    }
 
     protected void publishEvent(EventType eventType) {
         Status.EVENT = eventType;

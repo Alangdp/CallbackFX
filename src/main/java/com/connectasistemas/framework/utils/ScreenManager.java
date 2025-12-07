@@ -523,4 +523,11 @@ public class ScreenManager {
     public static String getWindowTitle() {
         return mainStage != null ? mainStage.getTitle() : "";
     }
+
+    /**
+     * Retorna o Stage principal da aplicação
+     */
+    public static Stage getMainStage() {
+        return mainStage;
+    }
 }
