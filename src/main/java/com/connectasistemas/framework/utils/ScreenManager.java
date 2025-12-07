@@ -3,9 +3,11 @@ package com.connectasistemas.framework.utils;
 import com.connectasistemas.framework.annotation.ScreenField;
 import com.connectasistemas.framework.annotation.ScreenFieldPosition;
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
+import com.connectasistemas.framework.annotation.ScreenProperties;
 import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.processor.AnnotationProcessor;
 import com.connectasistemas.framework.utils.position.PositionBinderGeneric;
+import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
 import com.connectasistemas.framework.utils.sizes.SizeBinderGeneric;
 import com.connectasistemas.framework.utils.validation.ValidationBinderGeneric;
 import javafx.scene.Node;
@@ -45,6 +47,11 @@ public class ScreenManager {
     // elementos futuros terão de ser diferente
     private static final PositionBinderGeneric positionBinderGeneric = new PositionBinderGeneric();
 
+    // Instância do binder de propriedades genéricas
+    // OBS: Poderia ser estático, mas quero manter como interface pois alguns
+    // elementos futuros terão de ser diferente
+    private static final PropertiesBinderGeneric propertiesBinderGeneric = new PropertiesBinderGeneric();
+
     private static final ValidationBinderGeneric validationBinderGeneric = new ValidationBinderGeneric();
 
     private static boolean changeInProgress;
@@ -60,6 +67,15 @@ public class ScreenManager {
             // Limpa referência de elementos relacionados a tela antiga
             clearPreviousScreen();
         });
+
+        // Inicializa a exibição da janela
+        // OBS: Inicializar duas vezes causa problemas
+        mainStage.show();
+
+        // Tenta centralizar a janela na tela
+        if (mainStage.getScene() != null && mainStage.getScene().getWindow() != null) {
+            mainStage.getScene().getWindow().centerOnScreen();
+        }
     }
 
     // Troca a tela para outra classe anotada com @Screen
@@ -88,6 +104,7 @@ public class ScreenManager {
 
     /**
      * Realiza a troca de tela para a classe especificada.
+     * 
      * @param screenClass Classe da tela para a qual se deseja trocar.
      */
     private static void performScreenChange(Class<?> screenClass) {
@@ -98,6 +115,8 @@ public class ScreenManager {
             Object previousInstance = screenInstance;
             screenInstance = screenClass.getDeclaredConstructor().newInstance();
 
+            ScreenProperties screenProperties = screenClass.getAnnotation(ScreenProperties.class);
+
             // Processa anotações
             AnnotationProcessor ap = new AnnotationProcessor();
             ScreenMetadata meta = ap.processScreen(screenClass);
@@ -107,8 +126,20 @@ public class ScreenManager {
             mainStage.setWidth(meta.getWidth());
             mainStage.setHeight(meta.getHeight());
 
+            // Aplica propriedades da tela
+            // OBS: Utiliza a mesma anotação dos elementos para a tela
+            if (screenProperties != null) {
+                propertiesBinderGeneric.applyToStage(screenProperties, mainStage);
+            }
+
             // Monta layout básico
             Region root = meta.root();
+
+            // Aplica propriedades da tela ao root
+            // OBS: Utiliza a mesma anotação dos elementos para a tela
+            if (screenProperties != null) {
+                propertiesBinderGeneric.applyAll(screenProperties, root);
+            }
 
             meta.getFields().forEach((acronym, field) -> {
                 field.setAccessible(true);
@@ -156,6 +187,7 @@ public class ScreenManager {
                 ScreenField f = field.getAnnotation(ScreenField.class);
                 ScreenFieldSize s = field.getAnnotation(ScreenFieldSize.class);
                 ScreenFieldPosition p = field.getAnnotation(ScreenFieldPosition.class);
+                ScreenProperties props = field.getAnnotation(ScreenProperties.class);
                 ScreenValidation v = field.getAnnotation(ScreenValidation.class);
 
                 // Carrega o node do cache
@@ -178,8 +210,14 @@ public class ScreenManager {
                     positionBinderGeneric.applyAll(p, node);
                 }
 
+                // Se possui anotação de validação genéricas
                 if (v != null) {
                     validationBinderGeneric.applyAll(v, node, key, screenInstance, meta.callbackInstance());
+                }
+
+                // Se possui anotação de propriedades genéricas
+                if (props != null) {
+                    propertiesBinderGeneric.applyAll(props, node);
                 }
             });
 
@@ -196,6 +234,11 @@ public class ScreenManager {
 
             if (previousInstance != null && previousInstance.getClass() != screenClass) {
                 screenHistory.push(previousInstance.getClass());
+            }
+
+            // Tenta centralizar a janela na tela
+            if (scene.getWindow() != null) {
+                scene.getWindow().centerOnScreen();
             }
 
             mainStage.setScene(scene);
@@ -215,7 +258,11 @@ public class ScreenManager {
      * Retorna para a tela anterior no histórico, se possível.
      */
     public static void goBack() {
+        // Caso não haja tela anterior, encerra a aplicação
         if (!canGoBack()) {
+            if (mainStage != null) {
+                mainStage.close();
+            }
             return;
         }
 
@@ -381,7 +428,8 @@ public class ScreenManager {
 
     /**
      * Ativa apenas o nó recebido, sem afetar os descendentes. Útil quando se deseja
-     * reabilitar um container específico mas preservar o estado desabilitado de seus filhos.
+     * reabilitar um container específico mas preservar o estado desabilitado de
+     * seus filhos.
      */
     public static void enableNode(Node node) {
         if (node == null) {
@@ -397,7 +445,8 @@ public class ScreenManager {
 
     /**
      * Ativa apenas o nó recebido, sem afetar os descendentes. Útil quando se deseja
-     * reabilitar um container específico mas preservar o estado desabilitado de seus filhos.
+     * reabilitar um container específico mas preservar o estado desabilitado de
+     * seus filhos.
      */
     public static void disableNode(Node node) {
         if (node != null) {

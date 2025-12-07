@@ -1,6 +1,7 @@
 package com.connectasistemas.framework;
 
 import com.connectasistemas.framework.utils.ScreenManager;
+import com.connectasistemas.framework.views.Example;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -13,6 +14,8 @@ public class StartApplication extends Application {
     public void start(Stage stage) throws IOException {
         // Inicializa o ScreenManager com o Stage principal
         ScreenManager.init(stage);
+
+        ScreenManager.changeTo(Example.class);
 
         stage.show();
     }

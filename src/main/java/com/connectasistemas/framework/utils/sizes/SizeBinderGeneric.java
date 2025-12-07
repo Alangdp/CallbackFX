@@ -6,6 +6,7 @@ import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.SizeBinder;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.control.SplitPane;
 import javafx.scene.layout.*;
 
 /**
@@ -24,7 +25,6 @@ public class SizeBinderGeneric implements SizeBinder {
 
         // ----- Width / Height -----
         if (node instanceof Region r) {
-
             double width = s.width();
             double height = s.height();
 
@@ -33,6 +33,7 @@ public class SizeBinderGeneric implements SizeBinder {
             } else if (width > 0) {
                 r.setMinWidth(width);
                 r.setPrefWidth(width);
+                r.setMaxWidth(width);
             }
 
             if (s.maxHeight()) {
@@ -40,6 +41,7 @@ public class SizeBinderGeneric implements SizeBinder {
             } else if (height > 0) {
                 r.setMinHeight(height);
                 r.setPrefHeight(height);
+                r.setMaxHeight(height);
             }
         }
 

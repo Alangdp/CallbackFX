@@ -42,6 +42,10 @@ public class ElementManager {
         registry.put(BorderPane.class, BorderPane::new);
         registry.put(VBox.class, VBox::new);
         registry.put(HBox.class, HBox::new);
+        registry.put(SplitPane.class, SplitPane::new);
+
+        // Lista/Tabelas
+        registry.put(ListView.class, ListView::new);
     }
 
     /**
@@ -78,6 +82,11 @@ public class ElementManager {
 
         if (region instanceof Pane pane) {
             pane.getChildren().add(child);
+            return;
+        }
+
+        if (region instanceof SplitPane splitPane) {
+            splitPane.getItems().add(child);
             return;
         }
 

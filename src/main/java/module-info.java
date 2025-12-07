@@ -1,7 +1,7 @@
 module com.connectasistemas.framework {
-    requires javafx.controls;
+    requires transitive javafx.controls;
     requires javafx.fxml;
-    requires javafx.graphics;
+    requires transitive javafx.graphics;
 
     exports com.connectasistemas.framework.annotation;
     exports com.connectasistemas.framework.enums;
@@ -13,4 +13,6 @@ module com.connectasistemas.framework {
     exports com.connectasistemas.framework.utils.position;
     exports com.connectasistemas.framework.utils.sizes;
     exports com.connectasistemas.framework.utils.validation;
+    exports com.connectasistemas.framework;
+    exports com.connectasistemas.framework.views;
 }
