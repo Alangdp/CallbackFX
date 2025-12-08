@@ -4,10 +4,14 @@ import com.connectasistemas.framework.annotation.ScreenFieldSize;
 import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.SizeBinder;
+import com.connectasistemas.framework.utils.ScreenManager;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
-import javafx.scene.control.SplitPane;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
 
 /**
  * Implementação genérica do SizeBinder
@@ -19,29 +23,69 @@ public class SizeBinderGeneric implements SizeBinder {
     public boolean applyAll(ScreenFieldSize s, Node node) {
         // Tenta aplicar o size para imageView
         // OBS: Caso não seja um imageView cai fora
-        if (applyImageView(s, node)) return true;
+        if (applyImageView(s, node))
+            return true;
 
-        if (s == null || node == null) return false;
+        if (s == null || node == null)
+            return false;
+
+        Stage stage = ScreenManager.getMainStage();
+        double stageWidth = stageDimension(stage, true);
+        double stageHeight = stageDimension(stage, false);
+        Rectangle2D screenBounds = determineScreenBounds(stage);
 
         // ----- Width / Height -----
         if (node instanceof Region r) {
-            double width = s.width();
-            double height = s.height();
+            double prefWidth = resolveSize(s.width(), stageWidth, true, screenBounds);
+            double minWidth = resolveSize(s.minWidth(), stageWidth, true, screenBounds);
+            double maxWidth = resolveSize(s.maxWidth(), stageWidth, true, screenBounds);
 
-            if (s.maxWidth()) {
-                r.setMaxWidth(Double.MAX_VALUE);
-            } else if (width > 0) {
-                r.setMinWidth(width);
-                r.setPrefWidth(width);
-                r.setMaxWidth(width);
+            if (minWidth > 0) {
+                r.setMinWidth(minWidth);
             }
 
-            if (s.maxHeight()) {
+            if (prefWidth > 0) {
+                r.setPrefWidth(prefWidth);
+                if (minWidth <= 0) {
+                    r.setMinWidth(prefWidth);
+                }
+                if (maxWidth <= 0 && !s.unlimitedWidth()) {
+                    r.setMaxWidth(prefWidth);
+                }
+            }
+
+            if (maxWidth > 0) {
+                r.setMaxWidth(maxWidth);
+            }
+
+            if (s.unlimitedWidth()) {
+                r.setMaxWidth(Double.MAX_VALUE);
+            }
+
+            double prefHeight = resolveSize(s.height(), stageHeight, false, screenBounds);
+            double minHeight = resolveSize(s.minHeight(), stageHeight, false, screenBounds);
+            double maxHeight = resolveSize(s.maxHeight(), stageHeight, false, screenBounds);
+
+            if (minHeight > 0) {
+                r.setMinHeight(minHeight);
+            }
+
+            if (prefHeight > 0) {
+                r.setPrefHeight(prefHeight);
+                if (minHeight <= 0) {
+                    r.setMinHeight(prefHeight);
+                }
+                if (maxHeight <= 0 && !s.unlimitedHeight()) {
+                    r.setMaxHeight(prefHeight);
+                }
+            }
+
+            if (maxHeight > 0) {
+                r.setMaxHeight(maxHeight);
+            }
+
+            if (s.unlimitedHeight()) {
                 r.setMaxHeight(Double.MAX_VALUE);
-            } else if (height > 0) {
-                r.setMinHeight(height);
-                r.setPrefHeight(height);
-                r.setMaxHeight(height);
             }
         }
 
@@ -58,9 +102,12 @@ public class SizeBinderGeneric implements SizeBinder {
         if (m.length == 4) {
             Insets margin = new Insets(m[0], m[1], m[2], m[3]);
 
-            if (node.getParent() instanceof VBox) VBox.setMargin(node, margin);
-            if (node.getParent() instanceof BorderPane) BorderPane.setMargin(node, margin);
-            if (node.getParent() instanceof HBox) HBox.setMargin(node, margin);
+            if (node.getParent() instanceof VBox)
+                VBox.setMargin(node, margin);
+            if (node.getParent() instanceof BorderPane)
+                BorderPane.setMargin(node, margin);
+            if (node.getParent() instanceof HBox)
+                HBox.setMargin(node, margin);
         }
 
         // ----- Grow -----
@@ -76,8 +123,10 @@ public class SizeBinderGeneric implements SizeBinder {
         if (node instanceof Pane p) {
             double spacing = s.spacing();
             if (spacing > 0) {
-                if (p instanceof VBox vbox) vbox.setSpacing(spacing);
-                if (p instanceof HBox hbox) hbox.setSpacing(spacing);
+                if (p instanceof VBox vbox)
+                    vbox.setSpacing(spacing);
+                if (p instanceof HBox hbox)
+                    hbox.setSpacing(spacing);
             }
         }
 
@@ -116,5 +165,56 @@ public class SizeBinderGeneric implements SizeBinder {
     private boolean applyImageView(ScreenFieldSize s, Node node) {
         SizeBinderImageView sizeBinderImageView = new SizeBinderImageView();
         return sizeBinderImageView.applyAll(s, node);
+    }
+
+    static double resolveSize(double configuredSize, double stageDimension, boolean width, Rectangle2D screenBounds) {
+        if (configuredSize <= 0) {
+            return configuredSize;
+        }
+
+        if (configuredSize <= 1) {
+            double reference = stageDimension > 0
+                    ? stageDimension
+                    : screenReference(width, screenBounds);
+
+            if (reference > 0) {
+                return configuredSize * reference;
+            }
+        }
+
+        return configuredSize;
+    }
+
+    private static double screenReference(boolean width, Rectangle2D screenBounds) {
+        if (screenBounds == null) {
+            return -1;
+        }
+        double reference = width ? screenBounds.getWidth() : screenBounds.getHeight();
+        return reference > 0 ? reference : -1;
+    }
+
+    static double stageDimension(Stage stage, boolean width) {
+        if (stage == null) {
+            return -1;
+        }
+
+        double value = width ? stage.getWidth() : stage.getHeight();
+        return Double.isNaN(value) || value <= 0 ? -1 : value;
+    }
+
+    static Rectangle2D determineScreenBounds(Stage stage) {
+        Stage referenceStage = stage != null ? stage : ScreenManager.getMainStage();
+        if (referenceStage != null && referenceStage.getWidth() > 0 && referenceStage.getHeight() > 0 &&
+                !Double.isNaN(referenceStage.getX()) && !Double.isNaN(referenceStage.getY())) {
+            ObservableList<Screen> screens = Screen.getScreensForRectangle(
+                    referenceStage.getX(), referenceStage.getY(),
+                    referenceStage.getWidth(), referenceStage.getHeight());
+
+            if (!screens.isEmpty()) {
+                return screens.get(0).getVisualBounds();
+            }
+        }
+
+        return Screen.getPrimary().getVisualBounds();
     }
 }

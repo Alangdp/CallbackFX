@@ -1,8 +1,12 @@
 package com.connectasistemas.framework.processor;
 
+import java.lang.reflect.Field;
+
 import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
+import com.connectasistemas.framework.interfaces.CustomElement;
 import com.connectasistemas.framework.utils.ScreenMetadata;
+import javafx.scene.layout.Region;
 
 /**
  * Processa anotações @Screen e @ScreenField
@@ -72,8 +76,33 @@ public class AnnotationProcessor {
             // Obtém a anotação
             ScreenField f = field.getAnnotation(ScreenField.class);
 
+            validateCustomField(field, f);
+
             // Adiciona no metadata
             metadata.addField(f.acronym(), field);
+        }
+    }
+
+    private void validateCustomField(Field field, ScreenField definition) {
+        Class<?> type = field.getType();
+        boolean implementsCustom = CustomElement.class.isAssignableFrom(type);
+
+        if (definition.custom() && !implementsCustom) {
+            throw new IllegalStateException(String.format(
+                    "O campo %s foi marcado como custom mas não implementa CustomElement.",
+                    field.getName()));
+        }
+
+        if (!definition.custom() && implementsCustom) {
+            throw new IllegalStateException(String.format(
+                    "O campo %s implementa CustomElement mas não está marcado com custom=true.",
+                    field.getName()));
+        }
+
+        if (implementsCustom && !Region.class.isAssignableFrom(type)) {
+            throw new IllegalStateException(String.format(
+                    "O campo %s precisa estender Region para ser usado como elemento customizado.",
+                    field.getName()));
         }
     }
 }

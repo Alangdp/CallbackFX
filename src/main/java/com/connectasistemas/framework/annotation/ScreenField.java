@@ -24,4 +24,7 @@ public @interface ScreenField {
     // Ordem do elemento na criação da tela
     // OBS: As anotações do java não vem em ordem durante o processamento
     int order() default 0;
+
+    // Indica que o campo representa um elemento customizado (implementa CustomElement)
+    boolean custom() default false;
 }

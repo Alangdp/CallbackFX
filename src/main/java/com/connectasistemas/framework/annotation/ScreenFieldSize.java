@@ -11,14 +11,19 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ScreenFieldSize {
-    // Define o tamanho do elemento
+    // Define o tamanho preferencial do elemento
     double width() default 0;
     double height() default 0;
 
-    // Define se o tamanho máximo será aplicado
-    // OBS: se aplicado ignora o width e height
-    boolean maxWidth() default false;
-    boolean maxHeight() default false;
+    // Limites mínimos/máximos (aceita pixels ou porcentagem 0-1)
+    double minWidth() default 0;
+    double maxWidth() default 0;
+    double minHeight() default 0;
+    double maxHeight() default 0;
+
+    // Tamanhos máximos
+    boolean unlimitedWidth() default false;
+    boolean unlimitedHeight() default false;
 
     // Define o tamanho em labels
     double labelWidth () default 0;

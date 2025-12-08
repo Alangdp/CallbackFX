@@ -13,6 +13,7 @@ import com.connectasistemas.framework.utils.validation.ValidationBinderGeneric;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.MenuBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -57,6 +58,7 @@ public class ScreenManager {
     private static boolean changeInProgress;
     private static Class<?> deferredScreenClass;
     private static final Stack<Class<?>> screenHistory = new Stack<>();
+    private static ScreenMetadata currentMetadata;
 
     // Armazena o stage na inicialização
     public static void init(Stage stage) {
@@ -119,7 +121,7 @@ public class ScreenManager {
 
             // Processa anotações
             AnnotationProcessor ap = new AnnotationProcessor();
-            ScreenMetadata meta = ap.processScreen(screenClass);
+            ScreenMetadata meta = currentMetadata = ap.processScreen(screenClass);
 
             // Atualiza título e tamanho
             mainStage.setTitle(meta.getTitle());
@@ -177,7 +179,7 @@ public class ScreenManager {
 
                 // Adiciona apenas elementos raiz diretamente ao container principal
                 if (f.father().isEmpty()) {
-                    ElementManager.addChild(root, node, f.position());
+                    ElementManager.addChild(root, node, f);
                 }
             });
 
@@ -197,7 +199,7 @@ public class ScreenManager {
                 if (!f.father().isEmpty()) {
                     // Adiciona o elemento ao Pai
                     Region father = ScreenManagerSharedData.getScreenDataAsRegion(screenClass, f.father());
-                    ElementManager.addChild(father, node, f.position());
+                    ElementManager.addChild(father, node, f);
                 }
 
                 // Se tem anotação de tamanho no elemento
@@ -529,5 +531,28 @@ public class ScreenManager {
      */
     public static Stage getMainStage() {
         return mainStage;
+    }
+
+    /**
+     * Tenta aplicar o menu superior a janela atual
+     * @param topMenu menu superior a ser aplicado
+     */
+    public static void setTopMenu(MenuBar topMenu) {
+        if (currentMetadata.root() instanceof BorderPane borderPane) {
+            borderPane.setTop(topMenu);
+        } else {
+            Node node = currentMetadata.root();
+            if (node instanceof Parent parent) {
+                parent.getChildrenUnmodifiable().add(topMenu);
+            }
+        }
+    }
+
+    /**
+     * Retorna o root através do Cache
+     * @return root atual da tela
+     */
+    public static Node getRoot() {
+        return currentMetadata != null ? currentMetadata.root() : null;
     }
 }
