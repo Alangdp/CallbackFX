@@ -21,6 +21,5 @@ public interface CustomElement {
      * Chamado automaticamente pelo {@code ElementManager} logo depois da instanciação.
      */
     default void onElementCreated(Region instance) {
-        // default no-op
     }
 }

@@ -1,15 +1,7 @@
 package com.connectasistemas.framework.utils;
 
-import com.connectasistemas.framework.annotation.ScreenField;
-import com.connectasistemas.framework.annotation.ScreenFieldPosition;
-import com.connectasistemas.framework.annotation.ScreenFieldSize;
 import com.connectasistemas.framework.annotation.ScreenProperties;
-import com.connectasistemas.framework.annotation.ScreenValidation;
-import com.connectasistemas.framework.processor.AnnotationProcessor;
-import com.connectasistemas.framework.utils.position.PositionBinderGeneric;
 import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
-import com.connectasistemas.framework.utils.sizes.SizeBinderGeneric;
-import com.connectasistemas.framework.utils.validation.ValidationBinderGeneric;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -19,10 +11,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -38,22 +26,10 @@ public class ScreenManager {
     // OBS: é a referência de @Screen não do javaFX
     private static Object screenInstance;
 
-    // Instância do binder de tamanho
-    // OBS: Poderia ser estático, mas quero manter como interface pois alguns
-    // elementos futuros terão de ser diferente
-    private static final SizeBinderGeneric sizeBinderGeneric = new SizeBinderGeneric();
-
-    // Instância do binder de posição
-    // OBS: Poderia ser estático, mas quero manter como interface pois alguns
-    // elementos futuros terão de ser diferente
-    private static final PositionBinderGeneric positionBinderGeneric = new PositionBinderGeneric();
-
     // Instância do binder de propriedades genéricas
     // OBS: Poderia ser estático, mas quero manter como interface pois alguns
     // elementos futuros terão de ser diferente
     private static final PropertiesBinderGeneric propertiesBinderGeneric = new PropertiesBinderGeneric();
-
-    private static final ValidationBinderGeneric validationBinderGeneric = new ValidationBinderGeneric();
 
     private static boolean changeInProgress;
     private static Class<?> deferredScreenClass;
@@ -105,6 +81,27 @@ public class ScreenManager {
     }
 
     /**
+     * Processa uma classe anotada com {@code @Screen} sem trocar o Stage atual,
+     * devolvendo os elementos montados para uso como fragmento embutido.
+     * @param screenClass Classe da tela a ser montada
+     * @return {@link ScreenView} com instância, metadados e nó raiz
+     */
+    public static ScreenView renderFragment(Class<?> screenClass) {
+        return renderFragment(screenClass, screenInstance);
+    }
+
+    public static ScreenView renderFragment(Class<?> screenClass, Object parentScreenInstance) {
+        if (screenClass == null) {
+            throw new IllegalArgumentException("Classe da tela não pode ser nula");
+        }
+        return ScreenAssembler.compose(screenClass, parentScreenInstance);
+    }
+
+    public static Region renderFragmentRoot(Class<?> screenClass) {
+        return renderFragment(screenClass).root();
+    }
+
+    /**
      * Realiza a troca de tela para a classe especificada.
      * 
      * @param screenClass Classe da tela para a qual se deseja trocar.
@@ -115,120 +112,22 @@ public class ScreenManager {
             clearPreviousScreen();
 
             Object previousInstance = screenInstance;
-            screenInstance = screenClass.getDeclaredConstructor().newInstance();
-
-            ScreenProperties screenProperties = screenClass.getAnnotation(ScreenProperties.class);
-
-            // Processa anotações
-            AnnotationProcessor ap = new AnnotationProcessor();
-            ScreenMetadata meta = currentMetadata = ap.processScreen(screenClass);
+            ScreenView view = ScreenAssembler.compose(screenClass);
+            screenInstance = view.screenInstance();
+            ScreenMetadata meta = currentMetadata = view.metadata();
+            ScreenProperties screenProperties = view.screenProperties();
 
             // Atualiza título e tamanho
             mainStage.setTitle(meta.getTitle());
             mainStage.setWidth(meta.getWidth());
             mainStage.setHeight(meta.getHeight());
 
-            // Aplica propriedades da tela
-            // OBS: Utiliza a mesma anotação dos elementos para a tela
+            // Aplica propriedades da tela diretamente no Stage
             if (screenProperties != null) {
                 propertiesBinderGeneric.applyToStage(screenProperties, mainStage);
             }
 
-            // Monta layout básico
-            Region root = meta.root();
-
-            // Aplica propriedades da tela ao root
-            // OBS: Utiliza a mesma anotação dos elementos para a tela
-            if (screenProperties != null) {
-                propertiesBinderGeneric.applyAll(screenProperties, root);
-            }
-
-            meta.getFields().forEach((acronym, field) -> {
-                field.setAccessible(true);
-
-                // Tipo declarado
-                Class<?> type = field.getType();
-
-                // Obtém a anotação
-                ScreenField f = field.getAnnotation(ScreenField.class);
-
-                // Cria Node
-                ElementManager.setLiteral(f.literal());
-                Node node = ElementManager.createElement(type);
-
-                // Atualiza a referência da propriedade da tela
-                if (!type.isInstance(node)) {
-                    throw new RuntimeException(StringUtils.concat(
-                            "Tipo incompatível ao criar elemento para o campo ",
-                            acronym));
-                }
-
-                try {
-                    field.set(screenInstance, node);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(StringUtils.concat(
-                            "Não foi possível atribuir o elemento ao campo ", acronym), e);
-                }
-
-                // Adiciona elemento a lista de cache
-                // OBS: usada para facilitar futuras manipulações via Acronym
-                ScreenManagerSharedData.setScreenData(screenClass, acronym, node);
-
-                // Aplica eventos
-                EventBinder.attach(acronym, node, screenInstance, meta.callbackInstance());
-
-                // Adiciona apenas elementos raiz diretamente ao container principal
-                if (f.father().isEmpty()) {
-                    ElementManager.addChild(root, node, f);
-                }
-            });
-
-            // Aplica posição em relação ao elemento pai
-            meta.getFields().forEach((key, field) -> {
-                // Obtém a anotação
-                ScreenField f = field.getAnnotation(ScreenField.class);
-                ScreenFieldSize s = field.getAnnotation(ScreenFieldSize.class);
-                ScreenFieldPosition p = field.getAnnotation(ScreenFieldPosition.class);
-                ScreenProperties props = field.getAnnotation(ScreenProperties.class);
-                ScreenValidation v = field.getAnnotation(ScreenValidation.class);
-
-                // Carrega o node do cache
-                Node node = ScreenManagerSharedData.getScreenData(screenClass, key);
-
-                // Se tem um elemento pai
-                if (!f.father().isEmpty()) {
-                    // Adiciona o elemento ao Pai
-                    Region father = ScreenManagerSharedData.getScreenDataAsRegion(screenClass, f.father());
-                    ElementManager.addChild(father, node, f);
-                }
-
-                // Se tem anotação de tamanho no elemento
-                if (s != null) {
-                    sizeBinderGeneric.applyAll(s, node);
-                }
-
-                // Se tem anotação de posição no elemento
-                if (p != null) {
-                    positionBinderGeneric.applyAll(p, node);
-                }
-
-                // Se possui anotação de validação genéricas
-                if (v != null) {
-                    validationBinderGeneric.applyAll(v, node, key, screenInstance, meta.callbackInstance());
-                }
-
-                // Se possui anotação de propriedades genéricas
-                if (props != null) {
-                    propertiesBinderGeneric.applyAll(props, node);
-                }
-            });
-
-            // Garante que a ordem dos filhos respeite o order configurado nas anotações
-            reorderChildrenByOrder(screenClass, meta, root);
-
-            // Troca a cena
-            Scene scene = new Scene(root);
-            invokeScreenInitializationCallback(screenClass, meta);
+            Scene scene = new Scene(view.root());
 
             if (deferredScreenClass != null) {
                 return;
@@ -273,103 +172,6 @@ public class ScreenManager {
     }
 
     /**
-     * Reordena os nós filhos de regiões (Pane) de acordo com a informação de ordem
-     * presente
-     * nas anotações de campo da tela (ScreenField).
-     * <p>
-     * Para cada campo descrito em {@code meta}, obtém o nó correspondente no cache
-     * de nós
-     * associado a {@code screenClass} (via
-     * {@link ScreenManagerSharedData#getCache()}).
-     * Cada nó é agrupado por seu pai (definido pela propriedade {@code father} da
-     * anotação
-     * {@code ScreenField}; se vazio, usa-se o {@code root} passado como parâmetro).
-     * Campos
-     * sem nó correspondente no cache são ignorados.
-     * <p>
-     * Após agrupar por pai, para cada grupo:
-     * - Se o pai for uma instância de {@link BorderPane}, o grupo é
-     * ignorado (nenhuma alteração é feita).
-     * - Se o pai for uma instância de {@link Pane}, os nós do grupo
-     * são ordenados primeiro pelo valor normalizado de ordem (obtido via
-     * {@code normalizedOrder(...)}) e, em caso de empate, pelo acrônimo do campo.
-     * Em seguida os filhos do {@code Pane} são substituídos pela lista ordenada.
-     * <p>
-     * Efeitos colaterais:
-     * - Modifica diretamente a lista de filhos das regiões do tipo {@link Pane}.
-     * - Lê dados e resolve regiões/recursos via {@link ScreenManagerSharedData}.
-     *
-     * @param screenClass classe da tela cujos nós/metadata serão reorderados
-     * @param meta        metadados da tela que contêm os campos (acrônimo ->
-     *                    campo/annotação)
-     * @param root        região raiz usada como pai padrão quando {@code father}
-     *                    estiver vazio
-     */
-    private static void reorderChildrenByOrder(Class<?> screenClass, ScreenMetadata meta, Region root) {
-        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(screenClass);
-        if (cachedNodes == null) {
-            return;
-        }
-
-        // Agrupa de nós por pai
-        Map<Region, List<NodeOrder>> grouped = new HashMap<>();
-
-        // Adiciona os nós ao grupo conforme o pai
-        meta.getFields().forEach((acronym, field) -> {
-            ScreenField f = field.getAnnotation(ScreenField.class);
-            Region parent = f.father().isEmpty()
-                    ? root
-                    : ScreenManagerSharedData.getScreenDataAsRegion(screenClass, f.father());
-
-            Node node = cachedNodes.get(acronym);
-            if (node == null) {
-                return;
-            }
-
-            grouped.computeIfAbsent(parent, k -> new ArrayList<>())
-                    .add(new NodeOrder(f.order(), acronym, node));
-        });
-
-        // Vare os nós agrupados por pai
-        grouped.forEach((parent, nodes) -> {
-            if (parent instanceof BorderPane) {
-                return;
-            }
-
-            if (parent instanceof Pane pane) {
-                nodes.sort(Comparator
-                        .comparingInt((NodeOrder nodeOrder) -> normalizedOrder(nodeOrder.order()))
-                        .thenComparing(NodeOrder::acronym));
-
-                List<Node> orderedNodes = nodes.stream()
-                        .map(NodeOrder::node)
-                        .toList();
-                pane.getChildren().setAll(orderedNodes);
-            }
-        });
-    }
-
-    // Normaliza o order para facilitar a ordenação
-    // OBS: valores <= 0 são considerados como Integer.MAX_VALUE ou seja, vão para o
-    // final
-    private static int normalizedOrder(int order) {
-        return order <= 0 ? Integer.MAX_VALUE : order;
-    }
-
-    // Estrutura para facilitar o agrupamento e ordenação dos nós
-    private record NodeOrder(int order, String acronym, Node node) {
-    }
-
-    private static void invokeScreenInitializationCallback(Class<?> screenClass, ScreenMetadata meta) {
-        Object callbacksInstance = meta.callbackInstance();
-        if (callbacksInstance == null) {
-            return;
-        }
-
-        CallbackInvoker.call(callbacksInstance, screenInstance, "config", screenClass.getSimpleName());
-    }
-
-    /**
      * Limpa referência de elementos relacionados a tela antiga
      * OBS: isso cria uma limitação de haver 2 telas sobreposta, entretanto no
      * momento não foi pensado nesse caso
@@ -378,17 +180,34 @@ public class ScreenManager {
      * ...Referência da tela pai
      */
     private static void clearPreviousScreen() {
-        if (screenInstance != null) {
-            EventBinder.deleteEvents(screenInstance);
-            ScreenManagerSharedData.resetScreenData(screenInstance);
+        if (screenInstance == null) {
+            return;
         }
+
+        disposeScreenHierarchy(screenInstance);
+        screenInstance = null;
+        currentMetadata = null;
+    }
+
+    private static void disposeScreenHierarchy(Object instance) {
+        if (instance == null) {
+            return;
+        }
+
+        ScreenHierarchyRegistry.detachChildren(instance).forEach(ScreenManager::disposeScreenHierarchy);
+        EventBinder.deleteEvents(instance);
+        ScreenManagerSharedData.resetScreenData(instance);
     }
 
     /**
      * Desativa todos os nós mantidos no cache da tela informada. Serve como um
      */
     public static void disableWindow(Class<?> screenClass) {
-        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(screenClass);
+        if (screenClass == null || screenInstance == null || screenInstance.getClass() != screenClass) {
+            return;
+        }
+
+        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(screenInstance);
         if (cachedNodes == null) {
             return;
         }
@@ -469,7 +288,11 @@ public class ScreenManager {
             return;
         }
 
-        Node node = ScreenManagerSharedData.getScreenData(screenClass, acronym);
+        if (screenInstance == null || screenInstance.getClass() != screenClass) {
+            return;
+        }
+
+        Node node = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
         setNodeVisibility(node, visible);
     }
 
@@ -538,13 +361,22 @@ public class ScreenManager {
      * @param topMenu menu superior a ser aplicado
      */
     public static void setTopMenu(MenuBar topMenu) {
-        if (currentMetadata.root() instanceof BorderPane borderPane) {
+        if (topMenu == null || currentMetadata == null) {
+            return;
+        }
+
+        Region root = currentMetadata.root();
+        if (root == null) {
+            return;
+        }
+
+        if (root instanceof BorderPane borderPane) {
             borderPane.setTop(topMenu);
-        } else {
-            Node node = currentMetadata.root();
-            if (node instanceof Parent parent) {
-                parent.getChildrenUnmodifiable().add(topMenu);
-            }
+            return;
+        }
+
+        if (root instanceof Pane pane) {
+            pane.getChildren().add(0, topMenu);
         }
     }
 

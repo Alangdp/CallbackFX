@@ -5,25 +5,24 @@ import javafx.scene.layout.Region;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Gerencia dados compartilhados entre telas
  */
 public class ScreenManagerSharedData {
     // Mapa de @Screen -> (Acronym -> Node)
-    private static final Map<Object, Map<String, Node>> CACHE = new HashMap<>();
+    private static final Map<Object, Map<String, Node>> CACHE = new WeakHashMap<>();
 
     /**
      * Apaga dados de uma tela
      * @param key Objeto da tela
      */
     public static void resetScreenData(Object key) {
-        CACHE.remove(key);
-        if (key instanceof Class<?> clazz) {
-            CACHE.remove(clazz);
-        } else if (key != null) {
-            CACHE.remove(key.getClass());
+        if (key == null) {
+            return;
         }
+        CACHE.remove(key);
     }
 
     /**
@@ -51,6 +50,10 @@ public class ScreenManagerSharedData {
      */
     public static void setScreenData(Object screen, String key, Node value) {
         // Caso não exista um Map para a tela atual cria-o
+        if (screen == null) {
+            throw new IllegalArgumentException("Tela não pode ser nula ao registrar dados");
+        }
+
         CACHE.putIfAbsent(screen, new HashMap<>());
 
         // Tenta obter o elemento a ser adicionado
@@ -75,6 +78,10 @@ public class ScreenManagerSharedData {
      */
     public static Node getScreenData(Object screen, String key) {
         // Caso não exista um Map para a tela atual cria-o
+        if (screen == null) {
+            throw new IllegalArgumentException("Tela não pode ser nula ao consultar dados");
+        }
+
         CACHE.putIfAbsent(screen, new HashMap<>());
 
         // Tenta obter o elemento a ser adicionado
@@ -98,6 +105,9 @@ public class ScreenManagerSharedData {
     public static Region getScreenDataAsRegion(Object screen, String key) {
         // Tenta obter o elemento a ser adicionado
         Map<String, Node> screenData = CACHE.get(screen);
+        if (screenData == null) {
+            throw new RuntimeException(StringUtils.concat("Tela não registrada ao procurar o elemento: ", key));
+        }
 
         Node node = screenData.get(key);
         if (node == null) {

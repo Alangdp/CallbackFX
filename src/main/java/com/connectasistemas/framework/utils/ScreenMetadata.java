@@ -82,6 +82,13 @@ public class ScreenMetadata {
         this.root = RegionManager.createRegion(clz);
     }
 
+    public void overrideRoot(Region region) {
+        if (region == null) {
+            throw new IllegalArgumentException("Root não pode ser nulo");
+        }
+        this.root = region;
+    }
+
     // Retorna o mapa de campos anotados]
     // OBS: Retorna a ordem hierárquica conforme os pais e o order definido em @ScreenFieldPosition
     public Map<String, Field> getFields() {
