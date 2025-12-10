@@ -11,6 +11,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -20,7 +22,7 @@ import javafx.scene.layout.VBox;
  * OBS: Usado para criar novos projetos ou abrir projetos existentes.
  * OBS: Página inicial do aplicativo.
  */
-@Screen(title = "Project Manager", height = 530, width = 800, region = VBox.class)
+@Screen(title = "Project Manager", height = 530, width = 800, region = VBox.class, callbacks = ExampleCallbacks.class)
 @ScreenProperties(resizable = false)
 public class Example {
 
@@ -62,6 +64,13 @@ public class Example {
     @ScreenField(acronym = "projectSummaryCard", father = "topContainer", position = Position.RIGHT, order = 3)
     @ScreenFieldSize(padding = { 10, 10, 10, 10 }, hgrow = true, vgrow = true)
     public ProjectSummaryCard projectSummaryCard;
+
+    @ScreenField(acronym = "projectTabs", father = "createProjectContainer", order = 4)
+    @ScreenFieldSize(vgrow = true, hgrow = true)
+    public TabPane projectTabs;
+
+    @ScreenField(acronym = "noPagesTab", father = "projectTabs", literal = "No pages created", order = 5)
+    public Tab noPagesTab;
 
     @ScreenField(acronym = "createProjectPathLabel", father = "createProjectContainer", literal = "Project name", order = 1)
     public Label createProjectPathLabel;

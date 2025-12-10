@@ -89,20 +89,23 @@ public final class ScreenAssembler {
             field.setAccessible(true);
             ScreenField definition = field.getAnnotation(ScreenField.class);
 
-            Node node = instantiateFieldNode(view, field, definition);
-            ensureAssignable(field, node, acronym);
-            assignField(field, screenInstance, node, acronym);
+            Object element = instantiateFieldElement(view, field, definition);
+            ensureAssignable(field, element, acronym);
+            assignField(field, screenInstance, element, acronym);
 
-            ScreenManagerSharedData.setScreenData(screenInstance, acronym, node);
-            EventBinder.attach(acronym, node, screenInstance, metadata.callbackInstance());
+            ScreenManagerSharedData.setScreenData(screenInstance, acronym, element);
+
+            if (element instanceof Node node) {
+                EventBinder.attach(acronym, node, screenInstance, metadata.callbackInstance());
+            }
 
             if (definition.father().isEmpty()) {
-                ElementManager.addChild(view.root(), node, definition);
+                ElementManager.addChild(view.root(), element, definition);
             }
         });
     }
 
-    private static Node instantiateFieldNode(ScreenView view, Field field, ScreenField definition) {
+    private static Object instantiateFieldElement(ScreenView view, Field field, ScreenField definition) {
         Class<?> type = field.getType();
 
         if (type.isAnnotationPresent(Screen.class)) {
@@ -124,14 +127,14 @@ public final class ScreenAssembler {
         return childView.root();
     }
 
-    private static void ensureAssignable(Field field, Node node, String acronym) {
-        if (!field.getType().isInstance(node)) {
+    private static void ensureAssignable(Field field, Object element, String acronym) {
+        if (!field.getType().isInstance(element)) {
             throw new RuntimeException(StringUtils.concat(
                     "Tipo incompatível ao criar elemento para o campo ", acronym));
         }
     }
 
-    private static void assignField(Field field, Object target, Node value, String acronym) {
+    private static void assignField(Field field, Object target, Object value, String acronym) {
         try {
             field.set(target, value);
         } catch (IllegalAccessException e) {
@@ -151,33 +154,35 @@ public final class ScreenAssembler {
             ScreenProperties props = field.getAnnotation(ScreenProperties.class);
             ScreenValidation validation = field.getAnnotation(ScreenValidation.class);
 
-            Node node = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
+            Object element = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
 
             if (!definition.father().isEmpty()) {
-                Region father = ScreenManagerSharedData.getScreenDataAsRegion(screenInstance, definition.father());
-                ElementManager.addChild(father, node, definition);
+                Object father = ScreenManagerSharedData.getScreenData(screenInstance, definition.father());
+                ElementManager.addChild(father, element, definition);
             }
 
-            if (size != null) {
-                SIZE_BINDER.applyAll(size, node);
-            }
+            if (element instanceof Node node) {
+                if (size != null) {
+                    SIZE_BINDER.applyAll(size, node);
+                }
 
-            if (position != null) {
-                POSITION_BINDER.applyAll(position, node);
-            }
+                if (position != null) {
+                    POSITION_BINDER.applyAll(position, node);
+                }
 
-            if (validation != null) {
-                VALIDATION_BINDER.applyAll(validation, node, acronym, screenInstance, metadata.callbackInstance());
-            }
+                if (validation != null) {
+                    VALIDATION_BINDER.applyAll(validation, node, acronym, screenInstance, metadata.callbackInstance());
+                }
 
-            if (props != null) {
-                PROPERTIES_BINDER.applyAll(props, node);
+                if (props != null) {
+                    PROPERTIES_BINDER.applyAll(props, node);
+                }
             }
         });
     }
 
     private static void reorderChildren(ScreenView view) {
-        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(view.screenInstance());
+        Map<String, Object> cachedNodes = ScreenManagerSharedData.getCache().get(view.screenInstance());
         if (cachedNodes == null) {
             return;
         }
@@ -186,12 +191,16 @@ public final class ScreenAssembler {
 
         view.metadata().getFields().forEach((acronym, field) -> {
             ScreenField definition = field.getAnnotation(ScreenField.class);
-            Region parent = definition.father().isEmpty()
+            Object parentElement = definition.father().isEmpty()
                     ? view.root()
-                    : ScreenManagerSharedData.getScreenDataAsRegion(view.screenInstance(), definition.father());
+                    : ScreenManagerSharedData.getScreenData(view.screenInstance(), definition.father());
 
-            Node node = cachedNodes.get(acronym);
-            if (node == null) {
+            if (!(parentElement instanceof Region parent)) {
+                return;
+            }
+
+            Object storedNode = cachedNodes.get(acronym);
+            if (!(storedNode instanceof Node node)) {
                 return;
             }
 

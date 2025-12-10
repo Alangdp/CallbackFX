@@ -1,7 +1,9 @@
 package com.connectasistemas.framework.utils;
 
-import com.connectasistemas.framework.annotation.ScreenProperties;
-import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
+import java.util.Map;
+import java.util.Stack;
+import java.util.WeakHashMap;
+
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -11,8 +13,8 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
-import java.util.Map;
-import java.util.Stack;
+import com.connectasistemas.framework.annotation.ScreenProperties;
+import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
 
 /**
  * Gerenciador da tela
@@ -35,6 +37,7 @@ public class ScreenManager {
     private static Class<?> deferredScreenClass;
     private static final Stack<Class<?>> screenHistory = new Stack<>();
     private static ScreenMetadata currentMetadata;
+    private static final Map<Object, Stage> childStages = new WeakHashMap<>();
 
     // Armazena o stage na inicialização
     public static void init(Stage stage) {
@@ -83,6 +86,7 @@ public class ScreenManager {
     /**
      * Processa uma classe anotada com {@code @Screen} sem trocar o Stage atual,
      * devolvendo os elementos montados para uso como fragmento embutido.
+     * 
      * @param screenClass Classe da tela a ser montada
      * @return {@link ScreenView} com instância, metadados e nó raiz
      */
@@ -99,6 +103,61 @@ public class ScreenManager {
 
     public static Region renderFragmentRoot(Class<?> screenClass) {
         return renderFragment(screenClass).root();
+    }
+
+    /**
+     * Abre uma tela anotada com {@code @Screen} como sub janela do Stage principal.
+     *
+     * @param screenClass classe da tela secundária
+     * @return {@link Stage} criado para a sub janela
+     */
+    public static Stage openChildWindow(Class<?> screenClass) {
+        return openChildWindow(screenClass, screenInstance);
+    }
+
+    /**
+     * Abre uma tela anotada com {@code @Screen} como sub janela, permitindo informar
+     * explicitamente a instância pai para registro da hierarquia.
+     *
+     * @param screenClass           classe da tela secundária
+     * @param parentScreenInstance  instância que servirá como pai lógico
+     * @return {@link Stage} criado para a sub janela
+     */
+    public static Stage openChildWindow(Class<?> screenClass, Object parentScreenInstance) {
+        if (screenClass == null) {
+            throw new IllegalArgumentException(StringUtils.concat(
+                    "Classe da tela não pode ser nula ao abrir sub janela"));
+        }
+
+        if (mainStage == null) {
+            throw new IllegalStateException(StringUtils.concat(
+                    "Stage principal não foi inicializado"));
+        }
+
+        ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
+        ScreenMetadata metadata = view.metadata();
+        ScreenProperties screenProperties = view.screenProperties();
+
+        Stage childStage = new Stage();
+        childStage.initOwner(mainStage);
+        childStage.setTitle(metadata.getTitle());
+        childStage.setWidth(metadata.getWidth());
+        childStage.setHeight(metadata.getHeight());
+
+        if (screenProperties != null) {
+            propertiesBinderGeneric.applyToStage(screenProperties, childStage);
+        }
+
+        Scene scene = new Scene(view.root());
+        childStage.setScene(scene);
+
+        childStages.put(view.screenInstance(), childStage);
+        childStage.setOnHidden(event -> disposeScreenHierarchy(view.screenInstance()));
+
+        childStage.show();
+        childStage.centerOnScreen();
+
+        return childStage;
     }
 
     /**
@@ -172,12 +231,8 @@ public class ScreenManager {
     }
 
     /**
-     * Limpa referência de elementos relacionados a tela antiga
-     * OBS: isso cria uma limitação de haver 2 telas sobreposta, entretanto no
-     * momento não foi pensado nesse caso
-     * TODO: Revisar isso para poder haver 2 telas, talvez usando alguma flag
-     * em @Screen, nesse caso deve salvar a...
-     * ...Referência da tela pai
+     * Limpa referência de elementos relacionados à tela do Stage principal.
+     * Use {@link #openChildWindow(Class)} para manter sub janelas coexistindo com a principal.
      */
     private static void clearPreviousScreen() {
         if (screenInstance == null) {
@@ -194,6 +249,12 @@ public class ScreenManager {
             return;
         }
 
+        Stage childStage = childStages.remove(instance);
+        if (childStage != null && childStage.isShowing()) {
+            childStage.setOnHidden(null);
+            childStage.close();
+        }
+
         ScreenHierarchyRegistry.detachChildren(instance).forEach(ScreenManager::disposeScreenHierarchy);
         EventBinder.deleteEvents(instance);
         ScreenManagerSharedData.resetScreenData(instance);
@@ -207,12 +268,15 @@ public class ScreenManager {
             return;
         }
 
-        Map<String, Node> cachedNodes = ScreenManagerSharedData.getCache().get(screenInstance);
+        Map<String, Object> cachedNodes = ScreenManagerSharedData.getCache().get(screenInstance);
         if (cachedNodes == null) {
             return;
         }
 
-        cachedNodes.values().forEach(ScreenManager::disableAll);
+        cachedNodes.values().stream()
+                .filter(Node.class::isInstance)
+                .map(Node.class::cast)
+                .forEach(ScreenManager::disableAll);
     }
 
     /**
@@ -292,7 +356,7 @@ public class ScreenManager {
             return;
         }
 
-        Node node = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
+        Node node = ScreenManagerSharedData.getScreenDataAsNode(screenInstance, acronym);
         setNodeVisibility(node, visible);
     }
 
@@ -358,6 +422,7 @@ public class ScreenManager {
 
     /**
      * Tenta aplicar o menu superior a janela atual
+     * 
      * @param topMenu menu superior a ser aplicado
      */
     public static void setTopMenu(MenuBar topMenu) {
@@ -382,6 +447,7 @@ public class ScreenManager {
 
     /**
      * Retorna o root através do Cache
+     * 
      * @return root atual da tela
      */
     public static Node getRoot() {

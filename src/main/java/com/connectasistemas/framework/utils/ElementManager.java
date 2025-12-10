@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 public class ElementManager {
 
     // Registro de tipos suportados
-    private static final Map<Class<?>, Supplier<Node>> registry = new HashMap<>();
+    private static final Map<Class<?>, Supplier<Object>> registry = new HashMap<>();
     private static final BorderPanePosition borderPanePosition = new BorderPanePosition();
     private static String literal = "";
 
@@ -34,6 +34,7 @@ public class ElementManager {
         registry.put(PasswordField.class, PasswordField::new);
         registry.put(Button.class,  Button::new);
         registry.put(TableView.class, TableView::new);
+        registry.put(Tab.class, Tab::new);
 
         // Registros personalizados
         registry.put(TextEntryLabel.class, () -> new TextEntryLabel(literal));
@@ -59,11 +60,11 @@ public class ElementManager {
      * Cria um elemento vazio do tipo recebido
      *
      * @param type Classe do tipo que deseja criar o elemento
-     * @return Node do tipo recebido
+     * @return Elemento do tipo recebido
      */
-    public static Node createElement(Class<?> type) {
+    public static Object createElement(Class<?> type) {
         // Cria o node vazio
-        Node node = createRegisteredElement(type);
+        Object node = createRegisteredElement(type);
 
         // Aplica literal ao elemento (Quando aplicável)
         ElementManager.applyLiteral(node, ElementManager.literal);
@@ -76,10 +77,10 @@ public class ElementManager {
      * Cria um elemento vazio do tipo recebido
      *
      * @param type Classe do tipo que deseja criar o elemento
-     * @return Node do tipo recebido
+     * @return Elemento do tipo recebido
      */
-    private static Node createRegisteredElement(Class<?> type) {
-        Supplier<Node> creator = registry.get(type);
+    private static Object createRegisteredElement(Class<?> type) {
+        Supplier<Object> creator = registry.get(type);
         if (creator != null) {
             return creator.get();
         }
@@ -88,21 +89,32 @@ public class ElementManager {
             return createCustomElement(type);
         }
 
-        throw new RuntimeException("Tipo inválido: " + type);
+        throw new RuntimeException(StringUtils.concat("Tipo inválido: ", type.getName()));
     }
 
     /**
      * Adiciona um filho a um Region conforme o tipo do Region
      *
-     * @param region   Region pai
-     * @param child    Node filho
-     * @param position Posição (apenas para BorderPane)
+     * @param parent   Container pai (Region ou Tab)
+     * @param child    Elemento filho (Node ou Tab, conforme o pai)
      */
-    public static void addChild(Region region, Node child, ScreenField metadata) {
+    public static void addChild(Object parent, Object child, ScreenField metadata) {
+        if (parent instanceof Tab tab) {
+            addChildToTab(tab, child);
+            return;
+        }
+
+        if (!(parent instanceof Region region)) {
+            throw new RuntimeException(StringUtils.concat(
+                    "Tipo não permitido para adicionar elementos: ",
+                    parent != null ? parent.getClass().getName() : "null"));
+        }
+
         Position position = metadata != null ? metadata.position() : Position.CENTER;
 
         if (region instanceof BorderPane borderPane) {
-            borderPanePosition.apply(borderPane, child, position);
+            Node nodeChild = requireNodeChild(child, borderPane.getClass().getSimpleName());
+            borderPanePosition.apply(borderPane, nodeChild, position);
             return;
         }
 
@@ -112,16 +124,20 @@ public class ElementManager {
         }
 
         if (region instanceof Pane pane) {
-            pane.getChildren().add(child);
+            Node nodeChild = requireNodeChild(child, pane.getClass().getSimpleName());
+            pane.getChildren().add(nodeChild);
             return;
         }
 
         if (region instanceof SplitPane splitPane) {
-            splitPane.getItems().add(child);
+            Node nodeChild = requireNodeChild(child, splitPane.getClass().getSimpleName());
+            splitPane.getItems().add(nodeChild);
             return;
         }
 
-        throw new RuntimeException("Tipo não permitido para adicionar elementos: " + region);
+        throw new RuntimeException(StringUtils.concat(
+                "Tipo não permitido para adicionar elementos: ",
+                region.getClass().getName()));
     }
 
     public static void setLiteral(String literal) {
@@ -131,13 +147,18 @@ public class ElementManager {
     /**
      * Aplica o literal (texto) ao componente conforme seu tipo
      */
-    private static void applyLiteral(Node node, String literal) {
-        if (literal == null || literal.isEmpty()) return;
+    private static void applyLiteral(Object element, String literal) {
+        if (literal == null || literal.isEmpty() || element == null) {
+            ElementManager.literal = "";
+            return;
+        }
 
-        if (node instanceof Labeled labeled) {
+        if (element instanceof Labeled labeled) {
             labeled.setText(literal);
-        } else if (node instanceof TextInputControl textInput) {
+        } else if (element instanceof TextInputControl textInput) {
             textInput.setPromptText(literal);
+        } else if (element instanceof Tab tab) {
+            tab.setText(literal);
         }
 
         ElementManager.literal = "";
@@ -170,9 +191,9 @@ public class ElementManager {
 
             Class<? extends Region> declaredType = customElement.getType();
             if (declaredType != null && !declaredType.isAssignableFrom(node.getClass())) {
-                throw new RuntimeException(String.format(
-                        "O elemento customizado %s deve estender %s.",
-                        type.getName(), declaredType.getName()));
+                throw new RuntimeException(StringUtils.concat(
+                    "O elemento customizado ", type.getName(),
+                    " deve estender ", declaredType.getName(), "."));
             }
 
             customElement.onElementCreated(regionNode);
@@ -180,7 +201,8 @@ public class ElementManager {
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Não foi possível criar o elemento customizado: " + type.getName(), e);
+            throw new RuntimeException(StringUtils.concat(
+                    "Não foi possível criar o elemento customizado: ", type.getName()), e);
         }
     }
 
@@ -191,18 +213,46 @@ public class ElementManager {
      * @param child   Node filho
      * @param metadata Metadados do campo da tela
      */
-    private static void addChildToTabPane(TabPane tabPane, Node child, ScreenField metadata) {
-        Tab tab = new Tab();
+    private static void addChildToTabPane(TabPane tabPane, Object child, ScreenField metadata) {
+        Tab tab;
+
+        if (child instanceof Tab childTab) {
+            tab = childTab;
+        } else {
+            Node nodeChild = requireNodeChild(child, tabPane.getClass().getSimpleName());
+            tab = new Tab();
+            tab.setContent(nodeChild);
+            tab.setClosable(false);
+        }
 
         if (metadata != null) {
             String title = StringUtils.isBlank(metadata.literal()) ? metadata.acronym() : metadata.literal();
-            tab.setText(title);
+            if (StringUtils.isBlank(tab.getText())) {
+                tab.setText(title);
+            }
         }
 
-        tab.setClosable(false);
-        tab.setContent(child);
         tabPane.getTabs().add(tab);
     }
 
+    private static void addChildToTab(Tab tab, Object child) {
+        Node nodeChild = requireNodeChild(child, Tab.class.getSimpleName());
 
+        if (tab.getContent() != null) {
+            throw new RuntimeException(StringUtils.concat(
+                    "Tab já possui conteúdo definido: ", tab.getText()));
+        }
+
+        tab.setContent(nodeChild);
+    }
+
+    private static Node requireNodeChild(Object child, String parentType) {
+        if (child instanceof Node node) {
+            return node;
+        }
+
+        throw new RuntimeException(StringUtils.concat(
+                "Apenas Nodes podem ser filhos de ", parentType, ": ",
+                child != null ? child.getClass().getName() : "null"));
+    }
 }
