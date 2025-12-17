@@ -161,6 +161,28 @@ public class ScreenManager {
     }
 
     /**
+     * Fecha uma sub janela previamente aberta via {@link #openChildWindow(Class)}.
+     *
+     * @param childInstance instância anotada com {@code @Screen} usada na sub janela
+     */
+    public static void closeChildWindow(Object childInstance) {
+        if (childInstance == null) {
+            return;
+        }
+
+        Stage childStage = childStages.remove(childInstance);
+        if (childStage == null) {
+            return;
+        }
+
+        childStage.setOnHidden(null);
+        if (childStage.isShowing()) {
+            childStage.close();
+        }
+        disposeScreenHierarchy(childInstance);
+    }
+
+    /**
      * Realiza a troca de tela para a classe especificada.
      * 
      * @param screenClass Classe da tela para a qual se deseja trocar.

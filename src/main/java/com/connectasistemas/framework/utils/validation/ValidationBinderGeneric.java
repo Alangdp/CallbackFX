@@ -1,5 +1,19 @@
 package com.connectasistemas.framework.utils.validation;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.TextInputControl;
+
 import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
@@ -8,16 +22,6 @@ import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.MessageUtil;
 import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.control.TextFormatter;
-import javafx.scene.control.TextInputControl;
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
 
 /**
  * Binder genérico responsável por aplicar validações declaradas via
@@ -46,10 +50,11 @@ public class ValidationBinderGeneric implements ValidationBinder {
 
         ValidationContext context = buildContext(validation);
         ValidationHandler handler = new ValidationHandler(screenInstance,
-                callbacksInstance,
-                acronym,
-                validation,
-                callbacksInstance != null && CallbackInvoker.exists(callbacksInstance, "valida", acronym));
+            callbacksInstance,
+            acronym,
+            validation,
+            callbacksInstance != null && CallbackInvoker.exists(callbacksInstance, "valida", acronym),
+            control);
 
         UnaryOperator<TextFormatter.Change> changeOperator = change -> {
             String newText = change.getControlNewText();
@@ -98,7 +103,7 @@ public class ValidationBinderGeneric implements ValidationBinder {
      *         OBS: TextInputControl pode ser usado para definir validações em
      *         TextField, TextArea, etc.
      */
-    private TextInputControl resolveTextInputControl(Node node) {
+    private static TextInputControl resolveTextInputControl(Node node) {
         if (node instanceof TextInputControl control) {
             return control;
         }
@@ -416,6 +421,7 @@ public class ValidationBinderGeneric implements ValidationBinder {
         private final String acronym;
         private final ScreenValidation validation;
         private final boolean hasValidationCallback;
+        private final TextInputControl control;
 
         private String lastText;
         private Boolean lastValid;
@@ -425,12 +431,14 @@ public class ValidationBinderGeneric implements ValidationBinder {
                 Object callbacksInstance,
                 String acronym,
                 ScreenValidation validation,
-                boolean hasValidationCallback) {
+                boolean hasValidationCallback,
+                TextInputControl control) {
             this.screenInstance = screenInstance;
             this.callbacksInstance = callbacksInstance;
             this.acronym = acronym;
             this.validation = validation;
             this.hasValidationCallback = hasValidationCallback;
+            this.control = control;
         }
 
         private void publish(String text, ValidationResult result, boolean force) {
@@ -442,6 +450,10 @@ public class ValidationBinderGeneric implements ValidationBinder {
         }
 
         private void publishInternal(String text, ValidationResult result, boolean force) {
+            if (force && FocusSuppression.consume(control)) {
+                return;
+            }
+
             boolean sameState = Objects.equals(lastText, text)
                     && Objects.equals(lastValid, result.valid())
                     && Objects.equals(lastMessage, result.message());
@@ -470,8 +482,40 @@ public class ValidationBinderGeneric implements ValidationBinder {
 
             if (!result.valid() && validation.showMessage() && force && result.message() != null
                     && !result.message().isBlank()) {
-                Platform.runLater(() -> MessageUtil.warn("Validação", result.message()));
+                Platform.runLater(() -> {
+                    MessageUtil.warn("Validação", result.message());
+                    if (control != null) {
+                        TextInputControl currentFocus = null;
+                        if (control.getScene() != null) {
+                            Node focusOwner = control.getScene().getFocusOwner();
+                            TextInputControl ownerControl = ValidationBinderGeneric.resolveTextInputControl(focusOwner);
+                            if (ownerControl != null && ownerControl != control) {
+                                currentFocus = ownerControl;
+                            }
+                        }
+                        FocusSuppression.suppress(currentFocus);
+                        control.requestFocus();
+                        control.selectAll();
+                    }
+                });
             }
+        }
+    }
+
+    private static final class FocusSuppression {
+        private static final Set<TextInputControl> SUPPRESSED = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        private FocusSuppression() {
+        }
+
+        private static void suppress(TextInputControl control) {
+            if (control != null) {
+                SUPPRESSED.add(control);
+            }
+        }
+
+        private static boolean consume(TextInputControl control) {
+            return control != null && SUPPRESSED.remove(control);
         }
     }
 }

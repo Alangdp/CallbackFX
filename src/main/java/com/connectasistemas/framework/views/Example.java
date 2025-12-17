@@ -100,11 +100,15 @@ public class Example {
     @ScreenFieldSize(padding = { 10, 10, 10, 10 }, spacing = 4, height = 35)
     public HBox buttomButtonContainer;
 
-    @ScreenField(acronym = "closeButton", father = "buttomButtonContainer", literal = "Close")
+    @ScreenField(acronym = "closeButton", father = "buttomButtonContainer", literal = "Close", order = 1)
     @ScreenFieldSize(width = 80, height = 35)
     public Button closeButton;
 
-    @ScreenField(acronym = "advanceButton", father = "buttomButtonContainer", literal = "Create")
+    @ScreenField(acronym = "advanceButton", father = "buttomButtonContainer", literal = "Create", order = 2)
     @ScreenFieldSize(width = 80, height = 35)
     public Button advanceButton;
+
+    @ScreenField(acronym = "testChildCallbacksButton", father = "buttomButtonContainer", literal = "Test Child Events", order = 3)
+    @ScreenFieldSize(width = 160, height = 35)
+    public Button testChildCallbacksButton;
 }

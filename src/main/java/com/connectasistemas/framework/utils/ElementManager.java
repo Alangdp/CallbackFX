@@ -5,7 +5,6 @@ import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.CustomElement;
-import com.connectasistemas.framework.utils.StringUtils;
 import com.connectasistemas.framework.utils.position.BorderPanePosition;
 import javafx.scene.Node;
 import javafx.scene.control.*;
