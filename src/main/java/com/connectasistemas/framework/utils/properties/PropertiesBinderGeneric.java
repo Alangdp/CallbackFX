@@ -14,6 +14,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.Tooltip;
@@ -76,6 +77,18 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         stage.setOpacity(properties.opacity());
     }
 
+    public void applyToTab(ScreenProperties properties, Tab tab) {
+        if (properties == null || tab == null) {
+            return;
+        }
+
+        tab.setDisable(!properties.enabled());
+        applyTabId(properties, tab);
+        applyTabStyle(properties, tab);
+        applyTabTooltip(properties, tab);
+        TabVisibilityManager.setVisible(tab, properties.visible());
+    }
+
     private void applyId(ScreenProperties properties, Node node) {
         String id = properties.id();
         if (id != null && !id.isBlank()) {
@@ -136,6 +149,34 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         }
 
         Tooltip.install(node, tooltip);
+    }
+
+    private void applyTabId(ScreenProperties properties, Tab tab) {
+        String id = properties.id();
+        if (id != null && !id.isBlank()) {
+            tab.setId(id);
+        }
+    }
+
+    private void applyTabStyle(ScreenProperties properties, Tab tab) {
+        if (properties.style() != null && !properties.style().isBlank()) {
+            tab.setStyle(properties.style());
+        }
+
+        String classes = properties.styleClass();
+        if (classes != null && !classes.isBlank()) {
+            String[] split = classes.trim().split("\\s+");
+            tab.getStyleClass().addAll(split);
+        }
+    }
+
+    private void applyTabTooltip(ScreenProperties properties, Tab tab) {
+        String text = properties.tooltip();
+        if (text == null || text.isBlank()) {
+            return;
+        }
+
+        tab.setTooltip(new Tooltip(text));
     }
 
     private void applyEditable(ScreenProperties properties, Node node) {

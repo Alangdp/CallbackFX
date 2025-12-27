@@ -3,14 +3,20 @@ package com.connectasistemas.framework.utils.validation;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.function.UnaryOperator;
 
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
 
@@ -20,6 +26,7 @@ import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.ValidationBinder;
 import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.MessageUtil;
+import com.connectasistemas.framework.utils.ScreenManagerSharedData;
 import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
 
@@ -28,6 +35,8 @@ import com.connectasistemas.framework.utils.StringUtils;
  * {@link ScreenValidation}.
  */
 public class ValidationBinderGeneric implements ValidationBinder {
+
+    private static final Map<ButtonBase, List<TriggerAction>> BUTTON_TRIGGERS = new WeakHashMap<>();
 
     /**
      * Aplica todas as validações declaradas em ScreenValidation ao Node fornecido.
@@ -78,21 +87,66 @@ public class ValidationBinderGeneric implements ValidationBinder {
 
         control.setTextFormatter(new TextFormatter<>(changeOperator));
 
-        control.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (!newV) {
-                String text = control.getText();
-                ValidationResult result = evaluateText(text, context);
-                handler.publishOnBlur(text, result);
-            }
-        });
+        if (StringUtils.isBlank(validation.validateOn())) {
+            control.focusedProperty().addListener((obs, oldV, newV) -> {
+                if (!newV) {
+                    String text = control.getText();
+                    ValidationResult result = evaluateText(text, context);
+                    handler.publishOnBlur(text, result);
+                }
+            });
+        }
 
         control.textProperty().addListener((obs, oldV, newV) -> {
             ValidationResult result = evaluateText(newV, context);
             handler.publish(newV, result, false);
         });
 
+        registerTrigger(validation, screenInstance, context, handler, control);
+
         handler.publish(control.getText(), evaluateText(control.getText(), context), false);
         return true;
+    }
+
+    private void registerTrigger(ScreenValidation validation,
+            Object screenInstance,
+            ValidationContext context,
+            ValidationHandler handler,
+            TextInputControl control) {
+
+        if (!validation.showMessage()) {
+            return;
+        }
+
+        String triggerAcronym = validation.validateOn();
+        if (StringUtils.isBlank(triggerAcronym)) {
+            return;
+        }
+
+        Object trigger = ScreenManagerSharedData.getScreenData(screenInstance, triggerAcronym);
+        if (!(trigger instanceof ButtonBase button)) {
+            throw new IllegalStateException(StringUtils.concat(
+                    "Elemento configurado em validateOn precisa ser um ButtonBase: ", triggerAcronym));
+        }
+
+        List<TriggerAction> actions = BUTTON_TRIGGERS.computeIfAbsent(button, key -> {
+            List<TriggerAction> list = new ArrayList<>();
+            button.addEventFilter(ActionEvent.ACTION, event -> {
+                for (TriggerAction action : new ArrayList<>(list)) {
+                    if (!action.validate()) {
+                        event.consume();
+                        break;
+                    }
+                }
+            });
+            return list;
+        });
+
+        actions.add(() -> {
+            ValidationResult result = evaluateText(control.getText(), context);
+            handler.publish(control.getText(), result, true);
+            return result.valid();
+        });
     }
 
     /**
@@ -480,8 +534,7 @@ public class ValidationBinderGeneric implements ValidationBinder {
                 CallbackInvoker.call(callbacksInstance, screenInstance, "valida", acronym, result.valid(), safeText);
             }
 
-            if (!result.valid() && validation.showMessage() && force && result.message() != null
-                    && !result.message().isBlank()) {
+            if (!result.valid() && validation.showMessage() && force && result.message() != null && !result.message().isBlank()) {
                 Platform.runLater(() -> {
                     MessageUtil.warn("Validação", result.message());
                     if (control != null) {
@@ -517,5 +570,10 @@ public class ValidationBinderGeneric implements ValidationBinder {
         private static boolean consume(TextInputControl control) {
             return control != null && SUPPRESSED.remove(control);
         }
+    }
+
+    @FunctionalInterface
+    private interface TriggerAction {
+        boolean validate();
     }
 }

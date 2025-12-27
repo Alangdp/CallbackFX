@@ -9,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
 
 import java.util.*;
@@ -22,58 +23,66 @@ public class EventBinder {
     // Instância de tela -> Map de elementos -> Lista de eventos
     // Tem essa hierarquia para poder apagar eventos de maneira simples, tive alguns problemas chatos com JavaFX por...
     // ...Causa disso
-    private static final Map<Object, Map<Node, List<Runnable>>> EVENT_MAP = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<Object, Map<Object, List<Runnable>>> EVENT_MAP = Collections.synchronizedMap(new WeakHashMap<>());
 
     /**
      * Vincula os eventos do javaFX com as funções de callback baseado na entrada
      *
      * @param acronym Sigla da campo
-     * @param node Instância do elemento
+     * @param element Instância do elemento
      * @param screenInstance Instância da tela
      * @param callbacksInstance Instância do controller
      */
     public static void attach(
             String acronym,
-            Node node,
+            Object element,
             Object screenInstance,
             Object callbacksInstance
     ) {
-        // Se não houver tela
-        if (screenInstance == null) return;
+        EventBinderEvents binder = null;
 
-        // Se a tela já não estiver adicionada, adiciona ao Map e já cria um novo para aquele mesmo valor
-        EVENT_MAP.computeIfAbsent(screenInstance, k -> new HashMap<>());
+        if (element instanceof TextField txt) {
+            binder = new EventBinderTextField(acronym, txt, screenInstance, callbacksInstance);
+        } else if (element instanceof CheckBox checkBox) {
+            binder = new EventBinderCheckBox(acronym, checkBox, screenInstance, callbacksInstance);
+        } else if (element instanceof ComboBox<?> comboBox) {
+            binder = new EventBinderComboBox(acronym, comboBox, screenInstance, callbacksInstance);
+        } else if (element instanceof Button button) {
+            binder = new EventBinderButton(acronym, button, screenInstance, callbacksInstance);
+        } else if (element instanceof TextEntryLabel txt) {
+            binder = new EventBinderTextEntryLabel(acronym, txt, screenInstance, callbacksInstance);
+        } else if (element instanceof CheckEntryLabel checkEntry) {
+            binder = new EventBinderCheckEntryLabel(acronym, checkEntry, screenInstance, callbacksInstance);
+        } else if (element instanceof ListView<?> listView) {
+            binder = new EventBinderListView(acronym, listView, screenInstance, callbacksInstance);
+        } else if (element instanceof Tab tab) {
+            binder = new EventBinderTab(acronym, tab, screenInstance, callbacksInstance);
+        }
 
-        // Map de eventos por elemento
-        Map<Node, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
+        attachElement(acronym, element, screenInstance, callbacksInstance, binder);
+    }
 
-        // Se Já tem eventos aplicados → não reaplica
-        if (screenEvents.containsKey(node)) {
+    private static void attachElement(
+            String acronym,
+            Object element,
+            Object screenInstance,
+            Object callbacksInstance,
+            EventBinderEvents binder
+    ) {
+        if (screenInstance == null || element == null) {
             return;
         }
 
-        // Chama o callback config
-        // OBS: É o evento genérico para todos os elementos até mesmo para a janela
+        EVENT_MAP.computeIfAbsent(screenInstance, k -> new HashMap<>());
+        Map<Object, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
+
+        if (screenEvents.containsKey(element)) {
+            return;
+        }
+
         CallbackInvoker.call(callbacksInstance, screenInstance, "config", acronym);
 
         List<Runnable> unregisters = new ArrayList<>();
-        EventBinderEvents binder = null;
-
-        if (node instanceof TextField txt) {
-            binder = new EventBinderTextField(acronym, txt, screenInstance, callbacksInstance);
-        } else if (node instanceof CheckBox checkBox) {
-            binder = new EventBinderCheckBox(acronym, checkBox, screenInstance, callbacksInstance);
-        } else if (node instanceof ComboBox<?> comboBox) {
-            binder = new EventBinderComboBox(acronym, comboBox, screenInstance, callbacksInstance);
-        } else if (node instanceof Button button) {
-            binder = new EventBinderButton(acronym, button, screenInstance, callbacksInstance);
-        } else if (node instanceof TextEntryLabel txt) {
-            binder = new EventBinderTextEntryLabel(acronym, txt, screenInstance, callbacksInstance);
-        } else if (node instanceof CheckEntryLabel checkEntry) {
-            binder = new EventBinderCheckEntryLabel(acronym, checkEntry, screenInstance, callbacksInstance);
-        } else if (node instanceof ListView<?> listView) {
-            binder = new EventBinderListView(acronym, listView, screenInstance, callbacksInstance);
-        }
 
         if (binder != null) {
             unregisters.addAll(binder.applyEntcamSaicamEvent());
@@ -82,8 +91,7 @@ public class EventBinder {
             unregisters.addAll(binder.applyCustomEvents());
         }
 
-        // Salva no registro
-        screenEvents.put(node, unregisters);
+        screenEvents.put(element, unregisters);
     }
 
     /**
@@ -93,7 +101,7 @@ public class EventBinder {
     public static void deleteEvents(Object screenInstance) {
         if (screenInstance == null) return;
 
-        Map<Node, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
+        Map<Object, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
         if (screenEvents == null) return;
 
         for (var entry : screenEvents.entrySet()) {

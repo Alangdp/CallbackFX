@@ -32,6 +32,8 @@ import java.lang.annotation.Target;
  *                     Usado para orientar validações específicas (por exemplo, TEXT, NUMBER, DATE). Padrão ValidationDataType.TEXT.
  * @return showMessage - indica se mensagens de erro devem ser exibidas ao usuário em caso de falha na validação. true por padrão.
  *                     Nesse caso, o framework vai mostrar warning de validação automaticamente.
+ * @return validateOn - acrônimo de um elemento (botão) que dispara a validação quando acionado. String vazia indica que
+ *                      não há gatilho externo configurado.
  *
  * Observações:
  * - Combinações de restrições devem ser interpretadas em conjunto (por exemplo, maxLength e
@@ -56,4 +58,5 @@ public @interface ScreenValidation {
     String datePattern() default "yyyy-MM-dd";
     ValidationDataType dataType() default ValidationDataType.TEXT;
     boolean showMessage() default false;
+    String validateOn() default "";
 }

@@ -4,6 +4,7 @@ import com.connectasistemas.framework.annotation.Screen;
 import com.connectasistemas.framework.annotation.ScreenField;
 import com.connectasistemas.framework.annotation.ScreenProperties;
 import com.connectasistemas.framework.annotation.ScreenFieldSize;
+import com.connectasistemas.framework.annotation.ScreenValidation;
 import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.views.components.ProjectSummaryCard;
 
@@ -69,13 +70,24 @@ public class Example {
     @ScreenFieldSize(vgrow = true, hgrow = true)
     public TabPane projectTabs;
 
+    @ScreenField(acronym = "tabEventStatus", father = "createProjectContainer", literal = "Selecione uma aba para ver os callbacks", order = 5)
+    public Label tabEventStatus;
+
     @ScreenField(acronym = "noPagesTab", father = "projectTabs", literal = "No pages created", order = 5)
     public Tab noPagesTab;
+
+    @ScreenField(acronym = "addPageTab", father = "projectTabs", literal = "Nova página", order = 6)
+    @ScreenProperties(visible = false)
+    public Tab addPageTab;
+
+    @ScreenField(acronym = "addPageTabContent", father = "addPageTab", literal = "Use esta aba para criar uma nova página", order = 1)
+    public Label addPageTabContent;
 
     @ScreenField(acronym = "createProjectPathLabel", father = "createProjectContainer", literal = "Project name", order = 1)
     public Label createProjectPathLabel;
 
     @ScreenField(acronym = "createProjectName", father = "createProjectContainer", literal = "Project name", order = 2)
+    @ScreenValidation(required = true, minLength = 3, maxLength = 50, showMessage = true, validateOn = "advanceButton")
     public TextField createProjectName;
 
     @ScreenField(acronym = "completeProjectContainerLabel", father = "createProjectContainer", literal = "Complete project path", order = 3)
@@ -85,6 +97,7 @@ public class Example {
     @ScreenField(acronym = "completeProjectPath", father = "completeProjectContainerLabel", order = 1)
     @ScreenProperties(enabled = false)
     @ScreenFieldSize(hgrow = true)
+    @ScreenValidation(required = true, minLength = 5, maxLength = 120, showMessage = true, validateOn = "advanceButton")
     public TextField completeProjectPath;
 
     @ScreenField(acronym = "browseProjectPathButton", father = "completeProjectContainerLabel", literal = "Browse", order = 2)
@@ -111,4 +124,8 @@ public class Example {
     @ScreenField(acronym = "testChildCallbacksButton", father = "buttomButtonContainer", literal = "Test Child Events", order = 3)
     @ScreenFieldSize(width = 160, height = 35)
     public Button testChildCallbacksButton;
+
+    @ScreenField(acronym = "showAddPageButton", father = "buttomButtonContainer", literal = "Mostrar aba extra", order = 4)
+    @ScreenFieldSize(width = 160, height = 35)
+    public Button showAddPageButton;
 }

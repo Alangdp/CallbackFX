@@ -20,6 +20,7 @@ import com.connectasistemas.framework.utils.sizes.SizeBinderGeneric;
 import com.connectasistemas.framework.utils.validation.ValidationBinderGeneric;
 
 import javafx.scene.Node;
+import javafx.scene.control.Tab;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -97,6 +98,8 @@ public final class ScreenAssembler {
 
             if (element instanceof Node node) {
                 EventBinder.attach(acronym, node, screenInstance, metadata.callbackInstance());
+            } else if (element instanceof Tab tab) {
+                EventBinder.attach(acronym, tab, screenInstance, metadata.callbackInstance());
             }
 
             if (definition.father().isEmpty()) {
@@ -155,10 +158,11 @@ public final class ScreenAssembler {
             ScreenValidation validation = field.getAnnotation(ScreenValidation.class);
 
             Object element = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
+            applyDefaultId(element, acronym);
 
             if (!definition.father().isEmpty()) {
-                Object father = ScreenManagerSharedData.getScreenData(screenInstance, definition.father());
-                ElementManager.addChild(father, element, definition);
+                Object parentElement = ScreenManagerSharedData.getScreenData(screenInstance, definition.father());
+                ElementManager.addChild(parentElement, element, definition);
             }
 
             if (element instanceof Node node) {
@@ -177,6 +181,10 @@ public final class ScreenAssembler {
                 if (props != null) {
                     PROPERTIES_BINDER.applyAll(props, node);
                 }
+            }
+
+            if (element instanceof Tab tab && props != null) {
+                PROPERTIES_BINDER.applyToTab(props, tab);
             }
         });
     }
@@ -240,5 +248,27 @@ public final class ScreenAssembler {
         }
 
         CallbackInvoker.call(callbacksInstance, view.screenInstance(), "config", view.screenClass().getSimpleName());
+    }
+
+    /**
+     * Aplica um ID padrão ao elemento, baseado no acrônimo do campo.
+     */
+    private static void applyDefaultId(Object element, String acronym) {
+        if (StringUtils.isBlank(acronym) || element == null) {
+            return;
+        }
+
+        if (element instanceof Node node) {
+            if (node.getId() == null || node.getId().isBlank()) {
+                node.setId(acronym);
+            }
+            return;
+        }
+
+        if (element instanceof Tab tab) {
+            if (tab.getId() == null || tab.getId().isBlank()) {
+                tab.setId(acronym);
+            }
+        }
     }
 }

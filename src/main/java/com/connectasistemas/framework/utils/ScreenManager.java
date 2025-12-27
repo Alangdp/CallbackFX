@@ -8,6 +8,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.Tab;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -15,6 +16,7 @@ import javafx.stage.Stage;
 
 import com.connectasistemas.framework.annotation.ScreenProperties;
 import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
+import com.connectasistemas.framework.utils.properties.TabVisibilityManager;
 
 /**
  * Gerenciador da tela
@@ -365,21 +367,20 @@ public class ScreenManager {
      * Ajusta a visibilidade de um elemento identificado pelo acronym.
      * Quando invisível, o elemento também deixa de ser gerenciado pelo layout.
      *
-     * @param screenClass classe da view anotada com {@code @Screen}
      * @param acronym     identificador configurado em {@code @ScreenField}
      * @param visible     define se o elemento deve permanecer visível e gerenciado
      */
-    public static void setNodeVisibility(Class<?> screenClass, String acronym, boolean visible) {
-        if (screenClass == null || StringUtils.isBlank(acronym)) {
+    public static void setNodeVisibility(String acronym, boolean visible) {
+        if (StringUtils.isBlank(acronym)) {
             return;
         }
 
-        if (screenInstance == null || screenInstance.getClass() != screenClass) {
+        if (screenInstance == null) {
             return;
         }
 
-        Node node = ScreenManagerSharedData.getScreenDataAsNode(screenInstance, acronym);
-        setNodeVisibility(node, visible);
+        Object element = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
+        setElementVisibility(element, visible);
     }
 
     /**
@@ -396,6 +397,17 @@ public class ScreenManager {
 
         node.setVisible(visible);
         node.setManaged(visible);
+    }
+
+    private static void setElementVisibility(Object element, boolean visible) {
+        if (element instanceof Node node) {
+            setNodeVisibility(node, visible);
+            return;
+        }
+
+        if (element instanceof Tab tab) {
+            TabVisibilityManager.setVisible(tab, visible);
+        }
     }
 
     private static void enableAncestors(Parent parent) {
