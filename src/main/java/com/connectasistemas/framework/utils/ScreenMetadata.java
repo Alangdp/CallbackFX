@@ -89,7 +89,7 @@ public class ScreenMetadata {
         this.root = region;
     }
 
-    // Retorna o mapa de campos anotados]
+    // Retorna o mapa de campos anotados
     // OBS: Retorna a ordem hierárquica conforme os pais e o order definido em @ScreenFieldPosition
     public Map<String, Field> getFields() {
 

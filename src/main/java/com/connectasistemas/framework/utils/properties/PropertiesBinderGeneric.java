@@ -18,6 +18,8 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import javafx.stage.Stage;
 
 /**
@@ -58,6 +60,7 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         applyEditable(properties, node);
         applyWrapText(properties, node);
         applySplitPaneResizability(properties, node);
+        applyTreeViewProperties(properties, node);
 
         if (properties.focusOnLoad()) {
             node.requestFocus();
@@ -189,6 +192,11 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
 
         if (node instanceof TextEntryLabel tel) {
             tel.getTextField().setEditable(editable);
+            return;
+        }
+
+        if (node instanceof TreeView<?> treeView) {
+            treeView.setEditable(editable);
         }
     }
 
@@ -269,5 +277,21 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
             divider.setPickOnBounds(false);
             divider.setStyle("-fx-padding: 0; -fx-background-color: transparent; -fx-border-color: transparent;");
         });
+    }
+
+    private void applyTreeViewProperties(ScreenProperties properties, Node node) {
+        if (!(node instanceof TreeView<?> treeView)) {
+            return;
+        }
+
+        treeView.setShowRoot(properties.showRoot());
+    }
+
+    public void applyToTreeItem(ScreenProperties properties, TreeItem<?> treeItem) {
+        if (properties == null || treeItem == null) {
+            return;
+        }
+
+        treeItem.setExpanded(properties.expanded());
     }
 }

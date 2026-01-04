@@ -7,6 +7,8 @@ import javafx.scene.input.KeyEvent;
 
 import com.connectasistemas.framework.utils.ScreenManager;
 import com.connectasistemas.framework.utils.StringUtils;
+import com.connectasistemas.framework.views.Example;
+import com.connectasistemas.framework.views.ExampleCallbacks;
 
 /**
  * Controller da tela ChildCallbacksDemo responsável pelos callbacks de teste.
@@ -87,6 +89,14 @@ public class ChildCallbacksDemoCallbacks {
                 " com conteúdo: ",
                 screen.childContentInput.getTextField().getText());
         updateStatus(screen, summary);
+
+        ExampleCallbacks parentCallbacks = ScreenManager.getControllerReference(Example.class);
+        Example parentScreen = ScreenManager.getScreenReference(Example.class);
+
+        if (parentCallbacks != null && parentScreen != null) {
+            String folderName = screen.childNameInput.getTextField().getText();
+            parentCallbacks.addExternalFolder(parentScreen, folderName);
+        }
     }
 
     public void callbackAltcamCloseChildButton(ChildCallbacksDemo screen) {

@@ -50,6 +50,7 @@ public class ElementManager {
         // Lista/Tabelas
         registry.put(ListView.class, ListView::new);
         registry.put(TreeView.class, TreeView::new);
+        registry.put(TreeItem.class, TreeItem::new);
         
         // TabPane
         registry.put(TabPane.class, TabPane::new);
@@ -100,6 +101,16 @@ public class ElementManager {
     public static void addChild(Object parent, Object child, ScreenField metadata) {
         if (parent instanceof Tab tab) {
             addChildToTab(tab, child);
+            return;
+        }
+
+        if (parent instanceof TreeView<?> treeView) {
+            addChildToTreeView(treeView, child);
+            return;
+        }
+
+        if (parent instanceof TreeItem<?> treeItem) {
+            addChildToTreeItem(treeItem, child);
             return;
         }
 
@@ -158,9 +169,17 @@ public class ElementManager {
             textInput.setPromptText(literal);
         } else if (element instanceof Tab tab) {
             tab.setText(literal);
+        } else if (element instanceof TreeItem<?> treeItem) {
+            applyTreeItemLiteral(treeItem, literal);
         }
 
         ElementManager.literal = "";
+    }
+
+    private static void applyTreeItemLiteral(TreeItem<?> treeItem, String literal) {
+        @SuppressWarnings("unchecked")
+        TreeItem<Object> rawItem = (TreeItem<Object>) treeItem;
+        rawItem.setValue(literal);
     }
 
     /**
@@ -245,6 +264,22 @@ public class ElementManager {
         tab.setContent(nodeChild);
     }
 
+    private static void addChildToTreeView(TreeView<?> treeView, Object child) {
+        TreeItem<?> treeItem = requireTreeItemChild(child, treeView.getClass().getSimpleName());
+
+        if (treeView.getRoot() == null) {
+            setTreeRootUnchecked(treeView, treeItem);
+            return;
+        }
+
+        addTreeChildUnchecked(treeView.getRoot(), treeItem);
+    }
+
+    private static void addChildToTreeItem(TreeItem<?> parentItem, Object child) {
+        TreeItem<?> treeItem = requireTreeItemChild(child, TreeItem.class.getSimpleName());
+        addTreeChildUnchecked(parentItem, treeItem);
+    }
+
     private static Node requireNodeChild(Object child, String parentType) {
         if (child instanceof Node node) {
             return node;
@@ -253,5 +288,29 @@ public class ElementManager {
         throw new RuntimeException(StringUtils.concat(
                 "Apenas Nodes podem ser filhos de ", parentType, ": ",
                 child != null ? child.getClass().getName() : "null"));
+    }
+
+    private static TreeItem<?> requireTreeItemChild(Object child, String parentType) {
+        if (child instanceof TreeItem<?> treeItem) {
+            return treeItem;
+        }
+
+        throw new RuntimeException(StringUtils.concat(
+                "Apenas TreeItem podem ser filhos de ", parentType, ": ",
+                child != null ? child.getClass().getName() : "null"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void setTreeRootUnchecked(TreeView<?> treeView, TreeItem<?> treeItem) {
+        TreeView<Object> rawTree = (TreeView<Object>) treeView;
+        TreeItem<Object> rawItem = (TreeItem<Object>) treeItem;
+        rawTree.setRoot(rawItem);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void addTreeChildUnchecked(TreeItem<?> parent, TreeItem<?> child) {
+        TreeItem<Object> rawParent = (TreeItem<Object>) parent;
+        TreeItem<Object> rawChild = (TreeItem<Object>) child;
+        rawParent.getChildren().add(rawChild);
     }
 }

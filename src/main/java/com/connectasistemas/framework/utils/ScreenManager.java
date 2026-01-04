@@ -100,7 +100,9 @@ public class ScreenManager {
         if (screenClass == null) {
             throw new IllegalArgumentException("Classe da tela não pode ser nula");
         }
-        return ScreenAssembler.compose(screenClass, parentScreenInstance);
+        ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
+        ScreenControllerRegistry.register(view);
+        return view;
     }
 
     public static Region renderFragmentRoot(Class<?> screenClass) {
@@ -137,6 +139,7 @@ public class ScreenManager {
         }
 
         ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
+        ScreenControllerRegistry.register(view);
         ScreenMetadata metadata = view.metadata();
         ScreenProperties screenProperties = view.screenProperties();
 
@@ -196,6 +199,7 @@ public class ScreenManager {
 
             Object previousInstance = screenInstance;
             ScreenView view = ScreenAssembler.compose(screenClass);
+            ScreenControllerRegistry.register(view);
             screenInstance = view.screenInstance();
             ScreenMetadata meta = currentMetadata = view.metadata();
             ScreenProperties screenProperties = view.screenProperties();
@@ -272,6 +276,8 @@ public class ScreenManager {
         if (instance == null) {
             return;
         }
+
+        ScreenControllerRegistry.unregister(instance);
 
         Stage childStage = childStages.remove(instance);
         if (childStage != null && childStage.isShowing()) {
@@ -397,6 +403,28 @@ public class ScreenManager {
 
         node.setVisible(visible);
         node.setManaged(visible);
+    }
+
+    /**
+     * Retorna a instância do controller registrada para a tela informada.
+     *
+     * @param screenClass classe anotada com {@code @Screen}
+     * @return controller associado ou {@code null}
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getControllerReference(Class<?> screenClass) {
+        return ScreenControllerRegistry.getControllerReference(screenClass);
+    }
+
+    /**
+     * Retorna a instância da tela registrada para a classe informada.
+     *
+     * @param screenClass classe anotada com {@code @Screen}
+     * @return instância atual da tela ou {@code null}
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getScreenReference(Class<T> screenClass) {
+        return ScreenControllerRegistry.getScreenReference(screenClass);
     }
 
     private static void setElementVisibility(Object element, boolean visible) {

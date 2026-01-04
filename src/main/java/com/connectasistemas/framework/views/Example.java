@@ -11,9 +11,11 @@ import com.connectasistemas.framework.views.components.ProjectSummaryCard;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -105,6 +107,47 @@ public class Example {
 
 
     // --------------------------------------------
+    // ? Estrutura de projeto (TreeView)
+    // --------------------------------------------
+
+    @ScreenField(acronym = "projectStructureContainer", father = "createProjectContainer", order = 6)
+    @ScreenFieldSize(spacing = 6, vgrow = true)
+    public VBox projectStructureContainer;
+
+    @ScreenField(acronym = "projectStructureTitle", father = "projectStructureContainer", literal = "Estrutura do projeto", order = 1)
+    public Label projectStructureTitle;
+
+    @ScreenField(acronym = "projectTreeStatus", father = "projectStructureContainer", literal = "Aguardando interação", order = 2)
+    public Label projectTreeStatus;
+
+    @ScreenField(acronym = "projectStructureTree", father = "projectStructureContainer", order = 3)
+    @ScreenFieldSize(vgrow = true, hgrow = true)
+    @ScreenProperties(showRoot = false, focusTraversable = true)
+    public TreeView<String> projectStructureTree;
+
+    @ScreenField(acronym = "projectTreeRoot", father = "projectStructureTree", literal = "Projeto CallbackFX", order = 1)
+    @ScreenProperties(expanded = true)
+    public TreeItem<String> projectTreeRoot;
+
+    @ScreenField(acronym = "projectTreeFolderSrc", father = "projectTreeRoot", literal = "src", order = 1)
+    @ScreenProperties(expanded = true)
+    public TreeItem<String> projectTreeFolderSrc;
+
+    @ScreenField(acronym = "projectTreeFolderMain", father = "projectTreeFolderSrc", literal = "main", order = 1)
+    @ScreenProperties(expanded = true)
+    public TreeItem<String> projectTreeFolderMain;
+
+    @ScreenField(acronym = "projectTreeFolderJava", father = "projectTreeFolderMain", literal = "java", order = 1)
+    public TreeItem<String> projectTreeFolderJava;
+
+    @ScreenField(acronym = "projectTreeFolderResources", father = "projectTreeFolderMain", literal = "resources", order = 2)
+    public TreeItem<String> projectTreeFolderResources;
+
+    @ScreenField(acronym = "projectTreeFolderTest", father = "projectTreeRoot", literal = "test", order = 2)
+    public TreeItem<String> projectTreeFolderTest;
+
+
+    // --------------------------------------------
     // ? Conteúdo inferior
     // --------------------------------------------
 
@@ -128,4 +171,8 @@ public class Example {
     @ScreenField(acronym = "showAddPageButton", father = "buttomButtonContainer", literal = "Mostrar aba extra", order = 4)
     @ScreenFieldSize(width = 160, height = 35)
     public Button showAddPageButton;
+
+    @ScreenField(acronym = "openTreeEditorButton", father = "buttomButtonContainer", literal = "Gerenciar árvore", order = 5)
+    @ScreenFieldSize(width = 160, height = 35)
+    public Button openTreeEditorButton;
 }

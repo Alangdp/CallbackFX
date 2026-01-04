@@ -1,10 +1,13 @@
 package com.connectasistemas.framework.views;
 
 import javafx.scene.control.Tab;
+import javafx.scene.control.TreeItem;
+import javafx.scene.input.MouseEvent;
 
 import com.connectasistemas.framework.utils.ScreenManager;
 import com.connectasistemas.framework.utils.StringUtils;
 import com.connectasistemas.framework.views.ChildCallbacksDemo;
+import com.connectasistemas.framework.views.ProjectTreeEditor;
 import com.connectasistemas.framework.views.components.ProjectSummaryCard;
 
 /**
@@ -35,6 +38,10 @@ public class ExampleCallbacks {
         ScreenManager.setNodeVisibility(screen.addPageTab.getId(), true);
         screen.projectTabs.getSelectionModel().select(screen.addPageTab);
         screen.showAddPageButton.setDisable(true);
+    }
+
+    public void callbackAltcamOpenTreeEditorButton(Example screen) {
+        ScreenManager.openChildWindow(ProjectTreeEditor.class, screen);
     }
 
     /**
@@ -70,11 +77,81 @@ public class ExampleCallbacks {
         screen.tabEventStatus.setText(StringUtils.concat("Selecionou a aba: ", tabTitle(screen.addPageTab)));
     }
 
+    /**
+     * Inicializa a TreeView de estrutura e seleciona o primeiro nó.
+     */
+    public void callbackConfigProjectStructureTree(Example screen) {
+        if (screen == null || screen.projectStructureTree == null) {
+            return;
+        }
+
+        updateTreeStatus(screen, "Tree pronta para uso");
+        if (screen.projectTreeFolderJava != null) {
+            screen.projectStructureTree.getSelectionModel().select(screen.projectTreeFolderJava);
+        }
+    }
+
+    public void callbackEntcamProjectStructureTree(Example screen) {
+        updateTreeStatus(screen, StringUtils.concat("Focus em TreeView -> ", currentTreeValue(screen)));
+    }
+
+    public void callbackSaicamProjectStructureTree(Example screen) {
+        updateTreeStatus(screen, "Saiu da TreeView");
+    }
+
+    public void callbackAltcamProjectStructureTree(Example screen) {
+        updateTreeStatus(screen, StringUtils.concat("Selecionou: ", currentTreeValue(screen)));
+    }
+
+    public void callbackClickProjectStructureTree(Example screen, MouseEvent event, TreeItem<?> selected) {
+        updateTreeStatus(screen, StringUtils.concat("Click em: ", readableValue(selected)));
+    }
+
+    public void callbackDoubleClickProjectStructureTree(Example screen, MouseEvent event, TreeItem<?> selected) {
+        updateTreeStatus(screen, StringUtils.concat("Double click em: ", readableValue(selected)));
+    }
+
+    /**
+     * Permite que outras telas adicionem nós na árvore principal.
+     */
+    public void addExternalFolder(Example screen, String folderName) {
+        if (screen == null || screen.projectTreeFolderJava == null || StringUtils.isBlank(folderName)) {
+            return;
+        }
+
+        TreeItem<String> newNode = new TreeItem<>(folderName.trim());
+        screen.projectTreeFolderJava.getChildren().add(newNode);
+        screen.projectStructureTree.getSelectionModel().select(newNode);
+        updateTreeStatus(screen, StringUtils.concat("Adicionado via child: ", folderName));
+    }
+
     private boolean hasTabStatusLabel(Example screen) {
         return screen != null && screen.tabEventStatus != null;
     }
 
     private String tabTitle(Tab tab) {
         return tab != null ? tab.getText() : "";
+    }
+
+    private void updateTreeStatus(Example screen, String message) {
+        if (screen == null || screen.projectTreeStatus == null) {
+            return;
+        }
+
+        screen.projectTreeStatus.setText(message);
+    }
+
+    private String currentTreeValue(Example screen) {
+        if (screen == null || screen.projectStructureTree == null || screen.projectStructureTree.getSelectionModel() == null) {
+            return "";
+        }
+
+        TreeItem<String> selected = screen.projectStructureTree.getSelectionModel().getSelectedItem();
+        return readableValue(selected);
+    }
+
+    private String readableValue(TreeItem<?> item) {
+        Object value = item != null ? item.getValue() : null;
+        return value != null ? value.toString() : "";
     }
 }

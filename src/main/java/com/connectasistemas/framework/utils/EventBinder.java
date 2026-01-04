@@ -11,6 +11,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TreeView;
 
 import java.util.*;
 
@@ -55,6 +56,8 @@ public class EventBinder {
             binder = new EventBinderCheckEntryLabel(acronym, checkEntry, screenInstance, callbacksInstance);
         } else if (element instanceof ListView<?> listView) {
             binder = new EventBinderListView(acronym, listView, screenInstance, callbacksInstance);
+        } else if (element instanceof TreeView<?> treeView) {
+            binder = new EventBinderTreeView(acronym, treeView, screenInstance, callbacksInstance);
         } else if (element instanceof Tab tab) {
             binder = new EventBinderTab(acronym, tab, screenInstance, callbacksInstance);
         }

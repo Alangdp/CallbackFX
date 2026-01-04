@@ -82,6 +82,12 @@ public @interface ScreenProperties {
 
 	double translateZ() default 0.0;
 
+	// Controla a exibição do root em TreeView.
+	boolean showRoot() default true;
+
+	// Expande automaticamente TreeItems anotados.
+	boolean expanded() default true;
+
 	// Flags adicionais para Stage.
 	boolean fullScreen() default false;
 
