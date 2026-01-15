@@ -28,6 +28,7 @@ public class ElementManager {
     static {
         // Registro padrão
         registry.put(TextField.class, TextField::new);
+        registry.put(TextArea.class, TextArea::new);
         registry.put(Label.class, Label::new);
         registry.put(CheckBox.class, CheckBox::new);
         registry.put(PasswordField.class, PasswordField::new);

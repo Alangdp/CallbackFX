@@ -1,5 +1,7 @@
 package com.connectasistemas.framework.utils;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.Stack;
 import java.util.WeakHashMap;
@@ -39,6 +41,8 @@ public class ScreenManager {
     private static Class<?> deferredScreenClass;
     private static final Stack<Class<?>> screenHistory = new Stack<>();
     private static ScreenMetadata currentMetadata;
+    private static MenuBar pendingTopMenu;
+    private static final ThreadLocal<Deque<ScreenMetadata>> composingMetadata = ThreadLocal.withInitial(ArrayDeque::new);
     private static final Map<Object, Stage> childStages = new WeakHashMap<>();
 
     // Armazena o stage na inicialização
@@ -488,22 +492,25 @@ public class ScreenManager {
      * @param topMenu menu superior a ser aplicado
      */
     public static void setTopMenu(MenuBar topMenu) {
-        if (topMenu == null || currentMetadata == null) {
+        if (topMenu == null) {
             return;
         }
 
-        Region root = currentMetadata.root();
-        if (root == null) {
+        ScreenMetadata metadata = resolveTopMenuMetadata();
+        if (metadata == null) {
+            pendingTopMenu = topMenu;
             return;
         }
 
-        if (root instanceof BorderPane borderPane) {
-            borderPane.setTop(topMenu);
+        if (applyTopMenu(topMenu, metadata.root())) {
+            if (metadata == currentMetadata) {
+                pendingTopMenu = null;
+            }
             return;
         }
 
-        if (root instanceof Pane pane) {
-            pane.getChildren().add(0, topMenu);
+        if (metadata == currentMetadata) {
+            pendingTopMenu = topMenu;
         }
     }
 
@@ -514,5 +521,57 @@ public class ScreenManager {
      */
     public static Node getRoot() {
         return currentMetadata != null ? currentMetadata.root() : null;
+    }
+
+    private static boolean applyTopMenu(MenuBar topMenu, Region root) {
+        if (topMenu == null || root == null) {
+            return false;
+        }
+
+        if (root instanceof BorderPane borderPane) {
+            borderPane.setTop(topMenu);
+            return true;
+        }
+
+        if (root instanceof Pane pane) {
+            pane.getChildren().add(0, topMenu);
+            return true;
+        }
+
+        return false;
+    }
+
+    static void pushCompositionMetadata(ScreenMetadata metadata) {
+        if (metadata == null) {
+            return;
+        }
+
+        composingMetadata.get().push(metadata);
+    }
+
+    static void popCompositionMetadata(ScreenMetadata metadata) {
+        Deque<ScreenMetadata> stack = composingMetadata.get();
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        if (stack.peek() == metadata) {
+            stack.pop();
+        } else {
+            stack.remove(metadata);
+        }
+
+        if (stack.isEmpty()) {
+            composingMetadata.remove();
+        }
+    }
+
+    private static ScreenMetadata resolveTopMenuMetadata() {
+        Deque<ScreenMetadata> stack = composingMetadata.get();
+        if (!stack.isEmpty()) {
+            return stack.peek();
+        }
+
+        return currentMetadata;
     }
 }

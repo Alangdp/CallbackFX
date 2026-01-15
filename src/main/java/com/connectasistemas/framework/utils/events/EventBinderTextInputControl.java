@@ -6,30 +6,30 @@ import com.connectasistemas.framework.utils.CallbackInvoker;
 import com.connectasistemas.framework.utils.Status;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
-import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Binder o de eventos para um textfield
+ * Binder generico para qualquer {@link TextInputControl} (TextField, TextArea, etc).
  */
-public class EventBinderTextField extends EventBinderEvents {
+public class EventBinderTextInputControl extends EventBinderEvents {
 
-    String acronym;
-    TextField txt;
-    Object screenInstance;
-    Object callbacksInstance;
+    private final String acronym;
+    private final TextInputControl input;
+    private final Object screenInstance;
+    private final Object callbacksInstance;
 
-    public EventBinderTextField(
+    public EventBinderTextInputControl(
             String acronym,
-            TextField txt,
+            TextInputControl input,
             Object screenInstance,
             Object callbacksInstance
     ) {
         this.acronym = acronym;
-        this.txt = txt;
+        this.input = input;
         this.screenInstance = screenInstance;
         this.callbacksInstance = callbacksInstance;
     }
@@ -45,7 +45,7 @@ public class EventBinderTextField extends EventBinderEvents {
     public List<Runnable> applyEntcamSaicamEvent() {
         List<Runnable> unregisters = new ArrayList<>();
 
-        unregisters.add(registerNavigationTracker(txt));
+        unregisters.add(registerNavigationTracker(input));
 
         boolean hasEntcam = CallbackInvoker.exists(callbacksInstance, "entcam", acronym);
         boolean hasSaicam = CallbackInvoker.exists(callbacksInstance, "saicam", acronym);
@@ -71,13 +71,13 @@ public class EventBinderTextField extends EventBinderEvents {
             if (hasSaicam) {
                 resetErrorTracking();
                 CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);
-                focusIfError(txt);
+                focusIfError(input);
             }
             clearExitReason();
         };
 
-        txt.focusedProperty().addListener(focusListener);
-        unregisters.add(() -> txt.focusedProperty().removeListener(focusListener));
+        input.focusedProperty().addListener(focusListener);
+        unregisters.add(() -> input.focusedProperty().removeListener(focusListener));
 
         return unregisters;
     }
@@ -101,8 +101,8 @@ public class EventBinderTextField extends EventBinderEvents {
             }
         };
 
-        txt.textProperty().addListener(textListener);
-        unregisters.add(() -> txt.textProperty().removeListener(textListener));
+        input.textProperty().addListener(textListener);
+        unregisters.add(() -> input.textProperty().removeListener(textListener));
 
         return unregisters;
     }
@@ -128,8 +128,8 @@ public class EventBinderTextField extends EventBinderEvents {
                 CallbackInvoker.call(callbacksInstance, screenInstance, "teclad", acronym, e);
             };
 
-            txt.addEventHandler(KeyEvent.KEY_RELEASED, handler);
-            unregisters.add(() -> txt.removeEventHandler(KeyEvent.KEY_RELEASED, handler));
+            input.addEventHandler(KeyEvent.KEY_RELEASED, handler);
+            unregisters.add(() -> input.removeEventHandler(KeyEvent.KEY_RELEASED, handler));
         }
 
         return unregisters;

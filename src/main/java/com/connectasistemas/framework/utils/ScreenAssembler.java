@@ -252,7 +252,12 @@ public final class ScreenAssembler {
             return;
         }
 
-        CallbackInvoker.call(callbacksInstance, view.screenInstance(), "config", view.screenClass().getSimpleName());
+        ScreenManager.pushCompositionMetadata(view.metadata());
+        try {
+            CallbackInvoker.call(callbacksInstance, view.screenInstance(), "config", view.screenClass().getSimpleName());
+        } finally {
+            ScreenManager.popCompositionMetadata(view.metadata());
+        }
     }
 
     /**

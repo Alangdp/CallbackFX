@@ -4,13 +4,12 @@ import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.utils.events.*;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
-import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TreeView;
 
 import java.util.*;
@@ -42,8 +41,8 @@ public class EventBinder {
     ) {
         EventBinderEvents binder = null;
 
-        if (element instanceof TextField txt) {
-            binder = new EventBinderTextField(acronym, txt, screenInstance, callbacksInstance);
+        if (element instanceof TextInputControl input) {
+            binder = new EventBinderTextInputControl(acronym, input, screenInstance, callbacksInstance);
         } else if (element instanceof CheckBox checkBox) {
             binder = new EventBinderCheckBox(acronym, checkBox, screenInstance, callbacksInstance);
         } else if (element instanceof ComboBox<?> comboBox) {
