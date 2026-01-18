@@ -21,6 +21,7 @@ import com.connectasistemas.framework.utils.validation.ValidationBinderGeneric;
 
 import javafx.scene.Node;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TreeItem;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
@@ -190,6 +191,10 @@ public final class ScreenAssembler {
 
             if (element instanceof TreeItem<?> treeItem && props != null) {
                 PROPERTIES_BINDER.applyToTreeItem(props, treeItem);
+            }
+
+            if (element instanceof TableColumn<?, ?> column && props != null) {
+                PROPERTIES_BINDER.applyToTableColumn(props, column);
             }
         });
     }

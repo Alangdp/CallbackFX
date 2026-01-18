@@ -15,4 +15,6 @@ module com.connectasistemas.framework {
     exports com.connectasistemas.framework.utils.validation;
     exports com.connectasistemas.framework;
     exports com.connectasistemas.framework.views;
+
+    opens com.connectasistemas.framework.examples to javafx.graphics;
 }

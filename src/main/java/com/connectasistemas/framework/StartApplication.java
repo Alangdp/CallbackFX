@@ -1,12 +1,12 @@
 package com.connectasistemas.framework;
 
-import com.connectasistemas.framework.utils.ScreenManager;
-import com.connectasistemas.framework.views.Example;
+import java.io.IOException;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-import java.io.IOException;
+import com.connectasistemas.framework.examples.Example;
+import com.connectasistemas.framework.utils.ScreenManager;
 
 public class StartApplication extends Application {
 

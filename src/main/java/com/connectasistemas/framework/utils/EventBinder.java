@@ -9,6 +9,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TreeView;
 
@@ -57,6 +59,10 @@ public class EventBinder {
             binder = new EventBinderListView(acronym, listView, screenInstance, callbacksInstance);
         } else if (element instanceof TreeView<?> treeView) {
             binder = new EventBinderTreeView(acronym, treeView, screenInstance, callbacksInstance);
+        } else if (element instanceof TableView<?> tableView) {
+            binder = new EventBinderTableView(acronym, tableView, screenInstance, callbacksInstance);
+        } else if (element instanceof TableColumn<?, ?> tableColumn) {
+            binder = new EventBinderTableColumn(acronym, tableColumn, screenInstance, callbacksInstance);
         } else if (element instanceof Tab tab) {
             binder = new EventBinderTab(acronym, tab, screenInstance, callbacksInstance);
         }

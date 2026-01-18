@@ -34,6 +34,7 @@ public class ElementManager {
         registry.put(PasswordField.class, PasswordField::new);
         registry.put(Button.class,  Button::new);
         registry.put(TableView.class, TableView::new);
+        registry.put(TableColumn.class, TableColumn::new);
         registry.put(Tab.class, Tab::new);
 
         // Registros personalizados
@@ -47,6 +48,11 @@ public class ElementManager {
         registry.put(VBox.class, VBox::new);
         registry.put(HBox.class, HBox::new);
         registry.put(SplitPane.class, SplitPane::new);
+        registry.put(Pane.class, Pane::new);
+
+        // Criação de serviços de layout
+        registry.put(Separator.class, Separator::new);
+        registry.put(ProgressBar.class, ProgressBar::new);
 
         // Lista/Tabelas
         registry.put(ListView.class, ListView::new);
@@ -115,6 +121,16 @@ public class ElementManager {
             return;
         }
 
+        if (parent instanceof TableView<?> tableView) {
+            addChildToTableView(tableView, child);
+            return;
+        }
+
+        if (parent instanceof TableColumn<?, ?> tableColumn) {
+            addChildToTableColumn(tableColumn, child);
+            return;
+        }
+
         if (!(parent instanceof Region region)) {
             throw new RuntimeException(StringUtils.concat(
                     "Tipo não permitido para adicionar elementos: ",
@@ -168,6 +184,8 @@ public class ElementManager {
             labeled.setText(literal);
         } else if (element instanceof TextInputControl textInput) {
             textInput.setPromptText(literal);
+        } else if (element instanceof TableColumn<?, ?> column) {
+            column.setText(literal);
         } else if (element instanceof Tab tab) {
             tab.setText(literal);
         } else if (element instanceof TreeItem<?> treeItem) {
@@ -281,6 +299,20 @@ public class ElementManager {
         addTreeChildUnchecked(parentItem, treeItem);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void addChildToTableView(TableView<?> tableView, Object child) {
+        TableColumn<?, ?> column = requireTableColumnChild(child, tableView.getClass().getSimpleName());
+        TableView rawTable = tableView;
+        rawTable.getColumns().add(column);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void addChildToTableColumn(TableColumn<?, ?> parentColumn, Object child) {
+        TableColumn<?, ?> column = requireTableColumnChild(child, parentColumn.getClass().getSimpleName());
+        TableColumn rawColumn = parentColumn;
+        rawColumn.getColumns().add(column);
+    }
+
     private static Node requireNodeChild(Object child, String parentType) {
         if (child instanceof Node node) {
             return node;
@@ -298,6 +330,16 @@ public class ElementManager {
 
         throw new RuntimeException(StringUtils.concat(
                 "Apenas TreeItem podem ser filhos de ", parentType, ": ",
+                child != null ? child.getClass().getName() : "null"));
+    }
+
+    private static TableColumn<?, ?> requireTableColumnChild(Object child, String parentType) {
+        if (child instanceof TableColumn<?, ?> tableColumn) {
+            return tableColumn;
+        }
+
+        throw new RuntimeException(StringUtils.concat(
+                "Apenas TableColumn podem ser filhos de ", parentType, ": ",
                 child != null ? child.getClass().getName() : "null"));
     }
 

@@ -43,4 +43,21 @@ public class ProjectTreeEditor {
     @ScreenField(acronym = "cancelButton", father = "actions", literal = "Cancelar", order = 2)
     @ScreenFieldSize(width = 120)
     public Button cancelButton;
+
+    private transient ProjectTreeEditorListener listener;
+
+    public void setListener(ProjectTreeEditorListener listener) {
+        this.listener = listener;
+    }
+
+    public ProjectTreeEditorListener getListener() {
+        return listener;
+    }
+
+    public interface ProjectTreeEditorListener {
+        void onFolderCreated(ProjectTreeEditor screen, String folderName);
+
+        default void onCancel(ProjectTreeEditor screen) {
+        }
+    }
 }

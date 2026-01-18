@@ -15,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.Tooltip;
@@ -90,6 +91,20 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         applyTabStyle(properties, tab);
         applyTabTooltip(properties, tab);
         TabVisibilityManager.setVisible(tab, properties.visible());
+    }
+
+    public void applyToTableColumn(ScreenProperties properties, TableColumn<?, ?> column) {
+        if (properties == null || column == null) {
+            return;
+        }
+
+        column.setEditable(properties.editable());
+        column.setVisible(properties.visible());
+        column.setSortable(properties.enabled());
+        column.setReorderable(properties.enabled());
+
+        applyColumnId(properties, column);
+        applyColumnStyle(properties, column);
     }
 
     private void applyId(ScreenProperties properties, Node node) {
@@ -180,6 +195,25 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         }
 
         tab.setTooltip(new Tooltip(text));
+    }
+
+    private void applyColumnId(ScreenProperties properties, TableColumn<?, ?> column) {
+        String id = properties.id();
+        if (id != null && !id.isBlank()) {
+            column.setId(id);
+        }
+    }
+
+    private void applyColumnStyle(ScreenProperties properties, TableColumn<?, ?> column) {
+        if (properties.style() != null && !properties.style().isBlank()) {
+            column.setStyle(properties.style());
+        }
+
+        String classes = properties.styleClass();
+        if (classes != null && !classes.isBlank()) {
+            String[] split = classes.trim().split("\\s+");
+            column.getStyleClass().addAll(split);
+        }
     }
 
     private void applyEditable(ScreenProperties properties, Node node) {
