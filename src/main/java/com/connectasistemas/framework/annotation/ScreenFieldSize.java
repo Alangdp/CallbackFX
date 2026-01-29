@@ -26,6 +26,8 @@ public @interface ScreenFieldSize {
     boolean unlimitedHeight() default false;
 
     // Define o tamanho em labels
+    // OBS: Usado para pradorizar tamanhos de labels em campos que possuem os elementos lado a lado...
+    // ...ex: Label + TextField (EntryLabelTextField)
     double labelWidth () default 0;
     double labelHeight() default 0;
 

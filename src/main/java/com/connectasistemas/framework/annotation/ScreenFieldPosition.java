@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ScreenFieldPosition {
-    // Alinhamento do elemento
+    // Alinhamento do elemento em relação ao pai
     Position alignment() default Position.CENTER;
 }

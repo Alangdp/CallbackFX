@@ -1,9 +1,11 @@
 package com.connectasistemas.framework.utils;
 
-import javafx.scene.control.TableColumn;
 
 import com.connectasistemas.framework.annotation.ScreenProperties;
-import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
+import com.connectasistemas.framework.internal.utils.PropertiesBinderGeneric;
+import com.connectasistemas.framework.internal.utils.ScreenManagerSharedData;
+
+import javafx.scene.control.TableColumn;
 
 /**
  * Conjunto de utilidades para manipular {@link TableColumn} em tempo de execução.

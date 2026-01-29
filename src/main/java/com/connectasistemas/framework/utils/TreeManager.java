@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.connectasistemas.framework.internal.utils.ScreenManagerSharedData;
+
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 

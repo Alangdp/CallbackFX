@@ -6,6 +6,17 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.WeakHashMap;
 
+import com.connectasistemas.framework.annotation.ScreenProperties;
+import com.connectasistemas.framework.internal.properties.TabVisibilityManager;
+import com.connectasistemas.framework.internal.utils.EventBinder;
+import com.connectasistemas.framework.internal.utils.PropertiesBinderGeneric;
+import com.connectasistemas.framework.internal.utils.ScreenAssembler;
+import com.connectasistemas.framework.internal.utils.ScreenHierarchyRegistry;
+import com.connectasistemas.framework.internal.utils.ScreenManagerSharedData;
+import com.connectasistemas.framework.internal.utils.ScreenMetadata;
+import com.connectasistemas.framework.internal.utils.records.ScreenView;
+import com.connectasistemas.framework.internal.utils.ScreenControllerRegistry;
+
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,10 +26,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
-
-import com.connectasistemas.framework.annotation.ScreenProperties;
-import com.connectasistemas.framework.utils.properties.PropertiesBinderGeneric;
-import com.connectasistemas.framework.utils.properties.TabVisibilityManager;
 
 /**
  * Gerenciador da tela
@@ -41,8 +48,8 @@ public class ScreenManager {
     private static Class<?> deferredScreenClass;
     private static final Stack<Class<?>> screenHistory = new Stack<>();
     private static ScreenMetadata currentMetadata;
-    private static MenuBar pendingTopMenu;
-    private static final ThreadLocal<Deque<ScreenMetadata>> composingMetadata = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Deque<ScreenCompositionMetadata>> composingMetadata = ThreadLocal
+            .withInitial(ArrayDeque::new);
     private static final Map<Object, Stage> childStages = new WeakHashMap<>();
 
     // Armazena o stage na inicialização
@@ -96,11 +103,11 @@ public class ScreenManager {
      * @param screenClass Classe da tela a ser montada
      * @return {@link ScreenView} com instância, metadados e nó raiz
      */
-    public static ScreenView renderFragment(Class<?> screenClass) {
+    private static ScreenView renderFragment(Class<?> screenClass) {
         return renderFragment(screenClass, screenInstance);
     }
 
-    public static ScreenView renderFragment(Class<?> screenClass, Object parentScreenInstance) {
+    private static ScreenView renderFragment(Class<?> screenClass, Object parentScreenInstance) {
         if (screenClass == null) {
             throw new IllegalArgumentException("Classe da tela não pode ser nula");
         }
@@ -124,11 +131,12 @@ public class ScreenManager {
     }
 
     /**
-     * Abre uma tela anotada com {@code @Screen} como sub janela, permitindo informar
+     * Abre uma tela anotada com {@code @Screen} como sub janela, permitindo
+     * informar
      * explicitamente a instância pai para registro da hierarquia.
      *
-     * @param screenClass           classe da tela secundária
-     * @param parentScreenInstance  instância que servirá como pai lógico
+     * @param screenClass          classe da tela secundária
+     * @param parentScreenInstance instância que servirá como pai lógico
      * @return {@link Stage} criado para a sub janela
      */
     public static Stage openChildWindow(Class<?> screenClass, Object parentScreenInstance) {
@@ -144,6 +152,7 @@ public class ScreenManager {
 
         ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
         ScreenControllerRegistry.register(view);
+
         ScreenMetadata metadata = view.metadata();
         ScreenProperties screenProperties = view.screenProperties();
 
@@ -172,7 +181,8 @@ public class ScreenManager {
     /**
      * Fecha uma sub janela previamente aberta via {@link #openChildWindow(Class)}.
      *
-     * @param childInstance instância anotada com {@code @Screen} usada na sub janela
+     * @param childInstance instância anotada com {@code @Screen} usada na sub
+     *                      janela
      */
     public static void closeChildWindow(Object childInstance) {
         if (childInstance == null) {
@@ -264,7 +274,8 @@ public class ScreenManager {
 
     /**
      * Limpa referência de elementos relacionados à tela do Stage principal.
-     * Use {@link #openChildWindow(Class)} para manter sub janelas coexistindo com a principal.
+     * Use {@link #openChildWindow(Class)} para manter sub janelas coexistindo com a
+     * principal.
      */
     private static void clearPreviousScreen() {
         if (screenInstance == null) {
@@ -377,8 +388,8 @@ public class ScreenManager {
      * Ajusta a visibilidade de um elemento identificado pelo acronym.
      * Quando invisível, o elemento também deixa de ser gerenciado pelo layout.
      *
-     * @param acronym     identificador configurado em {@code @ScreenField}
-     * @param visible     define se o elemento deve permanecer visível e gerenciado
+     * @param acronym identificador configurado em {@code @ScreenField}
+     * @param visible define se o elemento deve permanecer visível e gerenciado
      */
     public static void setNodeVisibility(String acronym, boolean visible) {
         if (StringUtils.isBlank(acronym)) {
@@ -491,12 +502,14 @@ public class ScreenManager {
      * 
      * @param topMenu menu superior a ser aplicado
      */
+    @SuppressWarnings("unused")
     public static void setTopMenu(MenuBar topMenu) {
         if (topMenu == null) {
             return;
         }
 
-        ScreenMetadata metadata = resolveTopMenuMetadata();
+        ScreenCompositionMetadata metadata = resolveTopMenuMetadata();
+        MenuBar pendingTopMenu;
         if (metadata == null) {
             pendingTopMenu = topMenu;
             return;
@@ -523,6 +536,20 @@ public class ScreenManager {
         return currentMetadata != null ? currentMetadata.root() : null;
     }
 
+    /**
+     * Retorna um descritor imutavel com as informacoes principais da tela atual.
+     * Serve para expor dados basicos sem permitir acesso direto ao {@code ScreenMetadata} interno.
+     *
+     * @return descritor da tela atual ou {@code null} quando nao ha tela carregada
+     */
+    public static ScreenDescriptor getCurrentScreenDescriptor() {
+        if (currentMetadata == null) {
+            return null;
+        }
+
+        return ScreenDescriptor.from(currentMetadata, screenInstance);
+    }
+
     private static boolean applyTopMenu(MenuBar topMenu, Region root) {
         if (topMenu == null || root == null) {
             return false;
@@ -541,7 +568,7 @@ public class ScreenManager {
         return false;
     }
 
-    static void pushCompositionMetadata(ScreenMetadata metadata) {
+    public static void pushCompositionMetadata(ScreenCompositionMetadata metadata) {
         if (metadata == null) {
             return;
         }
@@ -549,8 +576,8 @@ public class ScreenManager {
         composingMetadata.get().push(metadata);
     }
 
-    static void popCompositionMetadata(ScreenMetadata metadata) {
-        Deque<ScreenMetadata> stack = composingMetadata.get();
+    public static void popCompositionMetadata(ScreenCompositionMetadata metadata) {
+        Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
         if (stack.isEmpty()) {
             return;
         }
@@ -566,8 +593,8 @@ public class ScreenManager {
         }
     }
 
-    private static ScreenMetadata resolveTopMenuMetadata() {
-        Deque<ScreenMetadata> stack = composingMetadata.get();
+    private static ScreenCompositionMetadata resolveTopMenuMetadata() {
+        Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
         if (!stack.isEmpty()) {
             return stack.peek();
         }

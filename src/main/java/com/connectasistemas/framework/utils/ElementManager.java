@@ -5,7 +5,8 @@ import com.connectasistemas.framework.enums.Position;
 import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.CustomElement;
-import com.connectasistemas.framework.utils.position.BorderPanePosition;
+import com.connectasistemas.framework.internal.position.BorderPanePosition;
+
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
@@ -49,6 +50,7 @@ public class ElementManager {
         registry.put(HBox.class, HBox::new);
         registry.put(SplitPane.class, SplitPane::new);
         registry.put(Pane.class, Pane::new);
+        registry.put(StackPane.class, StackPane::new);
 
         // Criação de serviços de layout
         registry.put(Separator.class, Separator::new);

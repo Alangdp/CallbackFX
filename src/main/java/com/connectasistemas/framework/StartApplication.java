@@ -5,7 +5,7 @@ import java.io.IOException;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-import com.connectasistemas.framework.examples.Example;
+import com.connectasistemas.framework.internal.examples.Example;
 import com.connectasistemas.framework.utils.ScreenManager;
 
 public class StartApplication extends Application {

@@ -10,8 +10,4 @@ public enum EventType {
     TECLAD,
     CLICK,
     DOUBLE_CLICK,
-    VALIDA,
-    AVANCA,
-
-    JAN_AVANCA,
 }
