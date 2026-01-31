@@ -28,7 +28,9 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 /**
- * Gerenciador da tela
+ * Orquestra o ciclo de vida das telas anotadas com {@code @Screen}, cuidando da
+ * troca do {@link Stage} principal, gerenciamento de sub-janelas, histórico de
+ * navegação e controle de elementos armazenados em cache.
  */
 public class ScreenManager {
 
@@ -52,8 +54,14 @@ public class ScreenManager {
             .withInitial(ArrayDeque::new);
     private static final Map<Object, Stage> childStages = new WeakHashMap<>();
 
-    // Armazena o stage na inicialização
+    /**
+     * Armazena o {@link Stage} principal e aplica os listeners básicos de ciclo de
+     * vida.
+     *
+     * @param stage instância criada pelo JavaFX
+     */
     public static void init(Stage stage) {
+        // Guarda a referência inicial uma única vez
         mainStage = stage;
 
         // Evento geral de fechamento da janela
@@ -72,26 +80,37 @@ public class ScreenManager {
         }
     }
 
-    // Troca a tela para outra classe anotada com @Screen
+    /**
+     * Troca a tela ativa para uma classe anotada com {@code @Screen}, evitando
+     * alterações concorrentes quando múltiplas chamadas acontecem em sequência.
+     *
+     * @param screenClass classe da nova tela
+     */
     public static void changeTo(Class<?> screenClass) {
         if (screenClass == null) {
             return;
         }
 
         if (changeInProgress) {
+            // Memoriza a próxima tela para processar após a troca atual
             deferredScreenClass = screenClass;
             return;
         }
 
+        // Evita reentrância enquanto a troca está em andamento
         changeInProgress = true;
         try {
             Class<?> nextScreen = screenClass;
             while (nextScreen != null) {
+                // Zera referência antes de cada iteração
                 deferredScreenClass = null;
+                // Gera a tela e aplica no Stage
                 performScreenChange(nextScreen);
+                // Caso algum callback solicite outra tela, processamos na sequência
                 nextScreen = deferredScreenClass;
             }
         } finally {
+            // Libera o bloqueio mesmo em caso de exceção
             changeInProgress = false;
         }
     }
@@ -103,10 +122,24 @@ public class ScreenManager {
      * @param screenClass Classe da tela a ser montada
      * @return {@link ScreenView} com instância, metadados e nó raiz
      */
+    /**
+     * Constrói um {@link ScreenView} reutilizável sem alterar o Stage atual.
+     *
+     * @param screenClass classe da tela embutida
+     * @return view contendo instância, metadados e root
+     */
     private static ScreenView renderFragment(Class<?> screenClass) {
         return renderFragment(screenClass, screenInstance);
     }
 
+    /**
+     * Varre uma classe anotada com {@code @Screen} e registra o controller,
+     * vinculando opcionalmente a uma tela pai.
+     *
+     * @param screenClass           classe que será montada
+     * @param parentScreenInstance  instância da tela pai
+     * @return {@link ScreenView} pronto para uso em composições
+     */
     private static ScreenView renderFragment(Class<?> screenClass, Object parentScreenInstance) {
         if (screenClass == null) {
             throw new IllegalArgumentException("Classe da tela não pode ser nula");
@@ -116,6 +149,13 @@ public class ScreenManager {
         return view;
     }
 
+    /**
+     * Retorna apenas o nó raiz renderizado para uso direto dentro de outros
+     * layouts.
+     *
+     * @param screenClass classe anotada com {@code @Screen}
+     * @return {@link Region} raiz renderizada
+     */
     public static Region renderFragmentRoot(Class<?> screenClass) {
         return renderFragment(screenClass).root();
     }
@@ -150,12 +190,14 @@ public class ScreenManager {
                     "Stage principal não foi inicializado"));
         }
 
+        // Composição da tela filha reaproveitando o assembler padrão
         ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
         ScreenControllerRegistry.register(view);
 
         ScreenMetadata metadata = view.metadata();
         ScreenProperties screenProperties = view.screenProperties();
 
+        // Cria um Stage independente para a sub janela
         Stage childStage = new Stage();
         childStage.initOwner(mainStage);
         childStage.setTitle(metadata.getTitle());
@@ -163,12 +205,15 @@ public class ScreenManager {
         childStage.setHeight(metadata.getHeight());
 
         if (screenProperties != null) {
+            // Reaproveita o binder genérico para aplicar propriedades no Stage filho
             propertiesBinderGeneric.applyToStage(screenProperties, childStage);
         }
 
+        // A cena herda o root montado pelo assembler
         Scene scene = new Scene(view.root());
         childStage.setScene(scene);
 
+        // Controla o ciclo de vida da sub janela para liberar recursos automaticamente
         childStages.put(view.screenInstance(), childStage);
         childStage.setOnHidden(event -> disposeScreenHierarchy(view.screenInstance()));
 
@@ -208,10 +253,12 @@ public class ScreenManager {
      */
     private static void performScreenChange(Class<?> screenClass) {
         try {
+            // Guarda referência para empilhar histórico posteriormente
+            Object previousInstance = screenInstance;
+
             // Limpa referência de elementos relacionados a tela antiga
             clearPreviousScreen();
-
-            Object previousInstance = screenInstance;
+            // Monta a nova tela e registra controller
             ScreenView view = ScreenAssembler.compose(screenClass);
             ScreenControllerRegistry.register(view);
             screenInstance = view.screenInstance();
@@ -228,6 +275,7 @@ public class ScreenManager {
                 propertiesBinderGeneric.applyToStage(screenProperties, mainStage);
             }
 
+            // Cria a cena com o novo root antes de verificar centralização
             Scene scene = new Scene(view.root());
 
             if (deferredScreenClass != null) {
@@ -235,6 +283,7 @@ public class ScreenManager {
             }
 
             if (previousInstance != null && previousInstance.getClass() != screenClass) {
+                // Empilha o histórico somente quando a classe realmente mudou
                 screenHistory.push(previousInstance.getClass());
             }
 
@@ -243,6 +292,7 @@ public class ScreenManager {
                 scene.getWindow().centerOnScreen();
             }
 
+            // Aplica a cena recém-criada no Stage principal
             mainStage.setScene(scene);
         } catch (Exception e) {
             e.printStackTrace();
@@ -273,9 +323,8 @@ public class ScreenManager {
     }
 
     /**
-     * Limpa referência de elementos relacionados à tela do Stage principal.
-     * Use {@link #openChildWindow(Class)} para manter sub janelas coexistindo com a
-     * principal.
+     * Desfaz toda a estrutura associada à tela atual (eventos, cache e hierarquia),
+     * preparando o Stage para receber uma nova composição.
      */
     private static void clearPreviousScreen() {
         if (screenInstance == null) {
@@ -287,26 +336,38 @@ public class ScreenManager {
         currentMetadata = null;
     }
 
+    /**
+     * Remove recursivamente os recursos registrados para uma instância, incluindo
+     * filhos, eventos e sub-janelas.
+     *
+     * @param instance instância anotada com {@code @Screen}
+     */
     private static void disposeScreenHierarchy(Object instance) {
         if (instance == null) {
             return;
         }
 
+        // Remove o controller associado a esta instância
         ScreenControllerRegistry.unregister(instance);
 
         Stage childStage = childStages.remove(instance);
         if (childStage != null && childStage.isShowing()) {
+            // Garante que o listener de fechamento não tente dupla liberação
             childStage.setOnHidden(null);
             childStage.close();
         }
 
+        // Percorre todos os filhos registrados para liberar em cascata
         ScreenHierarchyRegistry.detachChildren(instance).forEach(ScreenManager::disposeScreenHierarchy);
+        // Remove eventos registrados via EventBinder
         EventBinder.deleteEvents(instance);
+        // Limpa o cache de elementos referentes à tela
         ScreenManagerSharedData.resetScreenData(instance);
     }
 
     /**
-     * Desativa todos os nós mantidos no cache da tela informada. Serve como um
+     * Desativa todos os nós mantidos no cache quando a tela corresponde à classe
+     * informada. Útil para bloquear interações temporariamente.
      */
     public static void disableWindow(Class<?> screenClass) {
         if (screenClass == null || screenInstance == null || screenInstance.getClass() != screenClass) {
@@ -442,6 +503,12 @@ public class ScreenManager {
         return ScreenControllerRegistry.getScreenReference(screenClass);
     }
 
+    /**
+     * Aplica a visibilidade no elemento apropriado, abstraindo o tipo concreto.
+     *
+     * @param element elemento recuperado do cache
+     * @param visible estado desejado
+     */
     private static void setElementVisibility(Object element, boolean visible) {
         if (element instanceof Node node) {
             setNodeVisibility(node, visible);
@@ -453,6 +520,10 @@ public class ScreenManager {
         }
     }
 
+    /**
+     * Reabilita todos os ancestrais para que o nó atual possa voltar a responder a
+     * eventos.
+     */
     private static void enableAncestors(Parent parent) {
         Parent current = parent;
         while (current != null) {
@@ -461,6 +532,10 @@ public class ScreenManager {
         }
     }
 
+    /**
+     * Caminha pela subárvore garantindo que os descendentes também sejam
+     * habilitados.
+     */
     private static void enableDescendants(Parent parent) {
         if (parent == null) {
             return;
@@ -508,21 +583,25 @@ public class ScreenManager {
             return;
         }
 
+        // Descobre qual tela está sendo composta no momento
         ScreenCompositionMetadata metadata = resolveTopMenuMetadata();
         MenuBar pendingTopMenu;
         if (metadata == null) {
+            // Sem metadados ainda, aguarda até que o root esteja pronto
             pendingTopMenu = topMenu;
             return;
         }
 
         if (applyTopMenu(topMenu, metadata.root())) {
             if (metadata == currentMetadata) {
+                // Menu aplicado diretamente à tela atual
                 pendingTopMenu = null;
             }
             return;
         }
 
         if (metadata == currentMetadata) {
+            // Registra para reaplicar assim que o layout suportar
             pendingTopMenu = topMenu;
         }
     }
@@ -568,6 +647,10 @@ public class ScreenManager {
         return false;
     }
 
+    /**
+     * Empilha metadados de composição enquanto telas aninhadas estão sendo
+     * processadas.
+     */
     public static void pushCompositionMetadata(ScreenCompositionMetadata metadata) {
         if (metadata == null) {
             return;
@@ -576,6 +659,10 @@ public class ScreenManager {
         composingMetadata.get().push(metadata);
     }
 
+    /**
+     * Remove o metadado informado do topo (ou da pilha) para manter o contexto
+     * consistente.
+     */
     public static void popCompositionMetadata(ScreenCompositionMetadata metadata) {
         Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
         if (stack.isEmpty()) {
@@ -593,6 +680,9 @@ public class ScreenManager {
         }
     }
 
+    /**
+     * Resolve qual metadado deve receber o menu superior (pilha ou tela atual).
+     */
     private static ScreenCompositionMetadata resolveTopMenuMetadata() {
         Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
         if (!stack.isEmpty()) {

@@ -14,84 +14,148 @@ import com.connectasistemas.framework.enums.CursorType;
 @Target({ ElementType.TYPE, ElementType.FIELD })
 public @interface ScreenProperties {
 
-	// Define se o elemento inicia habilitado.
+	/**
+	 * Define se o elemento inicia habilitado.
+	 */
 	boolean enabled() default true;
 
-	// Define se o elemento deve iniciar visível e gerenciado pelo layout.
+	/**
+	 * Controla a visibilidade inicial (visível e managed).
+	 */
 	boolean visible() default true;
 
-	// Controla se o elemento participa do layout ao iniciar.
+	/**
+	 * Determina se o nó participa do layout ao iniciar.
+	 */
 	boolean managed() default true;
 
-	// Controla se o elemento aceita foco de teclado ao iniciar.
+	/**
+	 * Permite foco de teclado logo após a criação.
+	 */
 	boolean focusTraversable() default true;
 
-	// Solicita foco logo após a criação.
+	/**
+	 * Solicita foco automaticamente depois da montagem.
+	 */
 	boolean focusOnLoad() default false;
 
-	// Indica se o Stage pode ser redimensionado (quando aplicável).
+	/**
+	 * Habilita redimensionamento do Stage associado.
+	 */
 	boolean resizable() default true;
 
-	// Opacidade inicial (1.0 = opaco, 0.0 = invisível).
+	/**
+	 * Opacidade inicial (1.0 opaco, 0.0 invisível).
+	 */
 	double opacity() default 1.0;
 
-	// Deixa o nó transparente para eventos de mouse.
+	/**
+	 * Ignora eventos de mouse no nó.
+	 */
 	boolean mouseTransparent() default false;
 
-	// Considera os limites do nó para seleção de clique.
+	/**
+	 * Permite cliques mesmo fora da forma do nó (usa bounds).
+	 */
 	boolean pickOnBounds() default false;
 
-	// Ativa cache de renderização do nó.
+	/**
+	 * Ativa cache de renderização para otimizar performance.
+	 */
 	boolean cache() default false;
 
-	// Controla edição em campos de texto.
+	/**
+	 * Permite edição em componentes editáveis.
+	 */
 	boolean editable() default true;
 
-	// Quebra de linha automática em labels ou áreas de texto.
+	/**
+	 * Ativa quebra automática em labels/texto.
+	 */
 	boolean wrapText() default false;
 
-	// Estilo inline (CSS).
+	/**
+	 * CSS inline aplicado diretamente no nó.
+	 */
 	String style() default "";
 
-	// Lista de classes CSS separadas por espaço.
+	/**
+	 * Lista de classes CSS separadas por espaço.
+	 */
 	String styleClass() default "";
 
-	// ID do nó (Não recomendável alterar, pois o framework pode usar para algumas funções).
+	/**
+	 * ID do nó; altere apenas quando necessário.
+	 */
 	String id() default "";
 
-	// Tooltip textual.
+	/**
+	 * Tooltip textual exibido ao passar o mouse.
+	 */
 	String tooltip() default "";
 
-	// Cursor CSS (ex.: hand, crosshair).
+	/**
+	 * Cursor usado ao sobrepor o elemento.
+	 */
 	CursorType cursor() default CursorType.DEFAULT;
 
-	// Rotação inicial em graus.
+	/**
+	 * Rotação inicial em graus.
+	 */
 	double rotate() default 0.0;
 
-	// Escala inicial.
+	/**
+	 * Escala horizontal inicial.
+	 */
 	double scaleX() default 1.0;
 
+	/**
+	 * Escala vertical inicial.
+	 */
 	double scaleY() default 1.0;
 
+	/**
+	 * Escala de profundidade inicial.
+	 */
 	double scaleZ() default 1.0;
 
-	// Translação inicial.
+	/**
+	 * Translação horizontal inicial.
+	 */
 	double translateX() default 0.0;
 
+	/**
+	 * Translação vertical inicial.
+	 */
 	double translateY() default 0.0;
 
+	/**
+	 * Translação em Z inicial.
+	 */
 	double translateZ() default 0.0;
 
-	// Controla a exibição do root em TreeView.
+	/**
+	 * Mostra ou oculta o root em TreeView.
+	 */
 	boolean showRoot() default true;
 
-	// Expande automaticamente TreeItems anotados.
+	/**
+	 * Expande automaticamente TreeItems anotados.
+	 */
 	boolean expanded() default true;
 
-	// Flags adicionais para Stage.
+	/**
+	 * Abre a janela em modo tela cheia.
+	 */
 	boolean fullScreen() default false;
 
+	/**
+	 * Maximiza o Stage após a criação.
+	 */
 	boolean maximized() default false;
 
+	/**
+	 * Mantém o Stage acima das demais janelas.
+	 */
 	boolean alwaysOnTop() default false;
 }

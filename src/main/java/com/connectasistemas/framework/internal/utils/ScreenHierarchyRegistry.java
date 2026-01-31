@@ -16,6 +16,9 @@ public final class ScreenHierarchyRegistry {
     private ScreenHierarchyRegistry() {
     }
 
+    /**
+     * Registra o relacionamento pai-filho para permitir descarte em cascata.
+     */
     public static void registerChild(Object parent, Object child) {
         if (parent == null || child == null) {
             return;
@@ -24,6 +27,10 @@ public final class ScreenHierarchyRegistry {
         CHILDREN_BY_PARENT.computeIfAbsent(parent, key -> new ArrayList<>()).add(child);
     }
 
+    /**
+     * Remove todos os filhos registrados de um pai específico, retornando uma
+     * cópia para iteração segura.
+     */
     public static List<Object> detachChildren(Object parent) {
         if (parent == null) {
             return List.of();
@@ -37,6 +44,9 @@ public final class ScreenHierarchyRegistry {
         return new ArrayList<>(children);
     }
 
+    /**
+     * Limpa completamente os vínculos registrados (usado em testes ou resets).
+     */
     public static void clear() {
         CHILDREN_BY_PARENT.clear();
     }

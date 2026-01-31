@@ -71,6 +71,10 @@ public class EventBinder {
         attachElement(acronym, element, screenInstance, callbacksInstance, binder);
     }
 
+    /**
+     * Registra o elemento no mapa interno e executa a configuração específica de
+     * eventos.
+     */
     private static void attachElement(
             String acronym,
             Object element,
@@ -89,6 +93,7 @@ public class EventBinder {
             return;
         }
 
+        // Permite que o controller configure o elemento antes dos eventos padrão
         CallbackInvoker.call(callbacksInstance, screenInstance, "config", acronym);
 
         List<Runnable> unregisters = new ArrayList<>();

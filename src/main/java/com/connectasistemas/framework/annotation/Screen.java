@@ -9,25 +9,34 @@ import java.lang.annotation.Target;
 import com.connectasistemas.framework.internal.position.BorderPanePosition;
 
 /**
- * Marca a classe como uma tela
- * 
+ * Marca uma classe como tela reconhecida pelo framework. Os valores definidos
+ * nesta anotação alimentam o {@link com.connectasistemas.framework.internal.utils.ScreenMetadata}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Screen {
-    // Define o título da tela
+    /**
+     * Título padrão exibido no {@link javafx.stage.Stage} principal.
+     */
     String title();
 
-    // Define a largura da tela
+    /**
+     * Largura inicial sugerida para a janela.
+     */
     int width() default 800;
 
-    // Define a altura da tela
+    /**
+     * Altura inicial sugerida para a janela.
+     */
     int height() default 600;
 
-    // Classe que contém os callbacks
+    /**
+     * Classe que concentra os callbacks usados pelo {@code EventBinder}.
+     */
     Class<?> callbacks() default Void.class;
-    
-    // Define qual será o root layout da tela
-    // Ex: BorderPane, AnchorPane, etc
+
+    /**
+     * Root layout utilizado durante a montagem (ex.: {@link javafx.scene.layout.BorderPane}).
+     */
     Class<?> region() default BorderPanePosition.class;
 }

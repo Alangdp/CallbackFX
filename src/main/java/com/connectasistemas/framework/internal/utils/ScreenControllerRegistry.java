@@ -18,6 +18,9 @@ public class ScreenControllerRegistry {
     private ScreenControllerRegistry() {
     }
 
+    /**
+     * Registra a instância de tela e o respectivo controller ativos.
+     */
     public static void register(ScreenView view) {
         if (view == null || view.metadata() == null) {
             return;
@@ -33,6 +36,9 @@ public class ScreenControllerRegistry {
         INSTANCE_TO_CLASS.put(view.screenInstance(), view.screenClass());
     }
 
+    /**
+     * Remove o vínculo referente à instância informada.
+     */
     public static void unregister(Object screenInstance) {
         if (screenInstance == null) {
             return;
@@ -50,6 +56,9 @@ public class ScreenControllerRegistry {
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * Retorna o controller registrado para a tela informada.
+     */
     public static <T> T getControllerReference(Class<?> screenClass) {
         if (screenClass == null) {
             return null;
@@ -60,6 +69,9 @@ public class ScreenControllerRegistry {
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * Retorna a instância da tela correspondente à classe.
+     */
     public static <T> T getScreenReference(Class<T> screenClass) {
         if (screenClass == null) {
             return null;
