@@ -12,9 +12,12 @@ import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TreeItem;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 
 import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor;
 import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor.ProjectTreeEditorListener;
@@ -26,6 +29,8 @@ import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
 import com.connectasistemas.framework.utils.TableManager;
 import com.connectasistemas.framework.utils.TreeManager;
+import com.connectasistemas.framework.utils.delimiter.Delimiter;
+import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
 
 /**
  * Controller responsável por demonstrar o uso das principais utilidades do
@@ -163,6 +168,69 @@ public class ExampleController {
         screen.layoutSplit.setDividerPositions(0.28);
         screen.datasetTable.setPlaceholder(new Label("Nenhum registro encontrado"));
         screen.eventLogList.setItems(eventLog);
+        configureDelimiterPreview(screen);
+        configureDragToken(screen);
+    }
+
+    private void announceDelimiterDrop(Example screen, String zoneName) {
+        updateStatus(screen, StringUtils.concat("Drop detectado na área ", zoneName));
+        addEventLog(screen, StringUtils.concat("Overlay demo acionado: ", zoneName));
+    }
+
+    private void configureDelimiterPreview(Example screen) {
+        if (screen == null || screen.delimiterPreviewPane == null) {
+            return;
+        }
+
+        screen.delimiterPreviewPane.setMinSize(300, 200);
+        screen.delimiterPreviewPane.setPrefSize(300, 200);
+
+        RegionOverlayPane overlay = screen.delimiterOverlayPane;
+        if (overlay == null) {
+            overlay = new RegionOverlayPane(screen.delimiterPreviewPane);
+            overlay.setDebugVisible(true);
+            screen.delimiterOverlayPane = overlay;
+        } else {
+            overlay.clearDelimiters();
+        }
+
+        registerDelimiterZone(screen, overlay, 100d, 25d, 0d, 0d, "Top");
+        registerDelimiterZone(screen, overlay, 33d, 50d, 0d, 25d, "Left");
+        registerDelimiterZone(screen, overlay, 34d, 50d, 33d, 25d, "Center");
+        registerDelimiterZone(screen, overlay, 33d, 50d, 67d, 25d, "Right");
+        registerDelimiterZone(screen, overlay, 100d, 25d, 0d, 75d, "Bottom");
+    }
+
+    private void registerDelimiterZone(
+            Example screen,
+            RegionOverlayPane overlay,
+            double widthPercent,
+            double heightPercent,
+            double startXPercent,
+            double startYPercent,
+            String label) {
+        overlay.addDelimiter(new Delimiter(widthPercent, heightPercent, startXPercent, startYPercent, label,
+                (event, delimiter) -> announceDelimiterDrop(screen, label)));
+    }
+
+    private void configureDragToken(Example screen) {
+        if (screen == null || screen.dragTokenLabel == null) {
+            return;
+        }
+        Label label = screen.dragTokenLabel;
+        label.setMinSize(240, 36);
+        label.setStyle("-fx-background-color: #e0e0e0; -fx-padding: 12; -fx-border-color: #8a8a8a; -fx-border-radius: 4; -fx-background-radius: 4;");
+        label.setOnDragDetected(event -> {
+            Dragboard dragboard = label.startDragAndDrop(TransferMode.ANY);
+            ClipboardContent content = new ClipboardContent();
+            content.putString("delimiter-demo-token");
+            dragboard.setContent(content);
+            event.consume();
+        });
+        label.setOnDragDone(event -> {
+            addEventLog(screen, StringUtils.concat("Drag finalizado com modo: ", event.getTransferMode()));
+            event.consume();
+        });
     }
 
     private void seedProjects(Example screen) {
