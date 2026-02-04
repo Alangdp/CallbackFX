@@ -25,9 +25,6 @@ public class StartApplication extends Application {
 
         // Solicita a troca imediata para o exemplo padrão ao subir a aplicação
         ScreenManager.changeTo(Example.class);
-
-        // Exibe o Stage somente após a composição inicial
-        stage.show();
     }
 
     /**

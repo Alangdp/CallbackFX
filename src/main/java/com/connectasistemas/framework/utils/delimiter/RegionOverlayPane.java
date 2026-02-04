@@ -42,7 +42,9 @@ public class RegionOverlayPane {
     private final InvalidationListener sizeListener = observable -> layoutDelimiters();
 
     /** Indica se o overlay deve mostrar estilos de depuração. */
-    private boolean debugVisible;
+    private boolean debugVisible = true;
+    /** Define se o overlay está habilitado para renderização e interação. */
+    private boolean overlayEnabled = true;
 
     /**
      * Cria o gerenciador de delimitadores para a {@link Region} informada.
@@ -81,6 +83,34 @@ public class RegionOverlayPane {
 
     public boolean isDebugVisible() {
         return debugVisible;
+    }
+
+    /**
+     * Controla a exibição completa do overlay, removendo ou inserindo a camada conforme necessário.
+     *
+     * @param enabled true para manter o overlay visível/interativo, false para ocultá-lo
+     */
+    public void setOverlayEnabled(boolean enabled) {
+        if (this.overlayEnabled == enabled) return;
+        this.overlayEnabled = enabled;
+
+        // OBS: O overlay precisa deixar de capturar eventos quando estiver oculto.
+        overlayLayer.setMouseTransparent(!enabled);
+        overlayLayer.setVisible(enabled);
+
+        if (enabled) {
+            attachToParent(targetRegion.getParent());
+            overlayLayer.toFront();
+            layoutDelimiters();
+            return;
+        }
+
+        // OBS: Ao desabilitar, remove da hierarquia para impedir renderização e eventos.
+        detachFromParent(targetRegion.getParent());
+    }
+
+    public boolean isOverlayEnabled() {
+        return overlayEnabled;
     }
 
     /**
@@ -203,6 +233,7 @@ public class RegionOverlayPane {
     }
 
     private void attachToParent(Parent parent) {
+        if (!overlayEnabled) return;
         if (parent == null) return;
         if (!(parent instanceof Pane pane)) {
             throw new IllegalStateException(StringUtils.concat(

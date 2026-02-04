@@ -11,9 +11,11 @@ import javafx.scene.input.DragEvent;
 public class Delimiter {
 
 	/**
-	 * Callback padrão que não realiza nenhuma operação, usado quando o usuário não fornece ação.
+	 * Callback padrão que não realiza nenhuma operação, usado quando o usuário não
+	 * fornece ação.
 	 */
-	private static final BiConsumer<DragEvent, Delimiter> NO_OP = (event, delimiter) -> { };
+	private static final BiConsumer<DragEvent, Delimiter> NO_OP = (event, delimiter) -> {
+	};
 
 	/** Percentual de largura relativo à {@link Region} que hospeda o overlay. */
 	private final double widthPercent;
@@ -31,12 +33,16 @@ public class Delimiter {
 	/**
 	 * Cria um delimitador com callback, offsets percentuais e rótulo opcional.
 	 *
-	 * @param widthPercent percentual de largura relativo ao componente pai (0 &lt; x &le; 100)
-	 * @param heightPercent percentual de altura relativo ao componente pai (0 &lt; x &le; 100)
-	 * @param startXPercent deslocamento horizontal inicial em porcentagem (0 &lt;= x &lt; 100)
-	 * @param startYPercent deslocamento vertical inicial em porcentagem (0 &lt;= x &lt; 100)
-	 * @param label texto exibido sobre o delimitador (opcional)
-	 * @param onDrop callback executado no drop; se nulo, nada será executado
+	 * @param widthPercent  percentual de largura relativo ao componente pai (0 &lt;
+	 *                      x &le; 100)
+	 * @param heightPercent percentual de altura relativo ao componente pai (0 &lt;
+	 *                      x &le; 100)
+	 * @param startXPercent deslocamento horizontal inicial em porcentagem (0 &lt;=
+	 *                      x &lt; 100)
+	 * @param startYPercent deslocamento vertical inicial em porcentagem (0 &lt;= x
+	 *                      &lt; 100)
+	 * @param label         texto exibido sobre o delimitador (opcional)
+	 * @param onDrop        callback executado no drop; se nulo, nada será executado
 	 */
 	public Delimiter(
 			double widthPercent,
@@ -46,11 +52,11 @@ public class Delimiter {
 			String label,
 			BiConsumer<DragEvent, Delimiter> onDrop) {
 
-		
 		// OBS: Guarda o percentual de largura configurado para orientar o layout.
 		this.widthPercent = widthPercent;
 
-		// OBS: Guarda o percentual de altura configurado para compor a área do delimitador.
+		// OBS: Guarda o percentual de altura configurado para compor a área do
+		// delimitador.
 		this.heightPercent = heightPercent;
 
 		// OBS: Define o deslocamento horizontal inicial relativo à esquerda da Region.
@@ -62,11 +68,13 @@ public class Delimiter {
 		// OBS: Permite rótulos nulos para delimitadores apenas funcionais.
 		this.label = label;
 
-		// OBS: Garante callback padrão para eliminar verificações de nulidade durante o drop.
+		// OBS: Garante callback padrão para eliminar verificações de nulidade durante o
+		// drop.
 		this.onDrop = onDrop == null ? NO_OP : onDrop;
 	}
 
-	public Delimiter(double widthPercent, double heightPercent, double startXPercent, double startYPercent, String label) {
+	public Delimiter(double widthPercent, double heightPercent, double startXPercent, double startYPercent,
+			String label) {
 		this(widthPercent, heightPercent, startXPercent, startYPercent, label, NO_OP);
 	}
 
@@ -138,14 +146,17 @@ public class Delimiter {
 	}
 
 	/**
-	 * Executa o callback associado, permitindo que subclasses façam pré-processamento.
+	 * Executa o callback associado, permitindo que subclasses façam
+	 * pré-processamento.
 	 *
 	 * @param event evento de drop recebido pelo delimitador
 	 */
 	public void executeDrop(DragEvent event) {
-		if (event == null) return;
+		if (event == null)
+			return;
 
-		// OBS: Encaminha o evento para o callback associado, preservando o contexto deste delimitador.
+		// OBS: Encaminha o evento para o callback associado, preservando o contexto
+		// deste delimitador.
 		onDrop.accept(event, this);
 	}
 }

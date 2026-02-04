@@ -173,6 +173,8 @@ public class ExampleController {
     }
 
     private void announceDelimiterDrop(Example screen, String zoneName) {
+
+        
         updateStatus(screen, StringUtils.concat("Drop detectado na área ", zoneName));
         addEventLog(screen, StringUtils.concat("Overlay demo acionado: ", zoneName));
     }
@@ -185,14 +187,7 @@ public class ExampleController {
         screen.delimiterPreviewPane.setMinSize(300, 200);
         screen.delimiterPreviewPane.setPrefSize(300, 200);
 
-        RegionOverlayPane overlay = screen.delimiterOverlayPane;
-        if (overlay == null) {
-            overlay = new RegionOverlayPane(screen.delimiterPreviewPane);
-            overlay.setDebugVisible(true);
-            screen.delimiterOverlayPane = overlay;
-        } else {
-            overlay.clearDelimiters();
-        }
+        RegionOverlayPane overlay = new RegionOverlayPane(screen.delimiterPreviewPane);
 
         registerDelimiterZone(screen, overlay, 100d, 25d, 0d, 0d, "Top");
         registerDelimiterZone(screen, overlay, 33d, 50d, 0d, 25d, "Left");
@@ -219,7 +214,8 @@ public class ExampleController {
         }
         Label label = screen.dragTokenLabel;
         label.setMinSize(240, 36);
-        label.setStyle("-fx-background-color: #e0e0e0; -fx-padding: 12; -fx-border-color: #8a8a8a; -fx-border-radius: 4; -fx-background-radius: 4;");
+        label.setStyle(
+                "-fx-background-color: #e0e0e0; -fx-padding: 12; -fx-border-color: #8a8a8a; -fx-border-radius: 4; -fx-background-radius: 4;");
         label.setOnDragDetected(event -> {
             Dragboard dragboard = label.startDragAndDrop(TransferMode.ANY);
             ClipboardContent content = new ClipboardContent();
