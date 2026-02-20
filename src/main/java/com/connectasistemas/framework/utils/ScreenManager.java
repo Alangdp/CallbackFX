@@ -136,8 +136,8 @@ public class ScreenManager {
      * Varre uma classe anotada com {@code @Screen} e registra o controller,
      * vinculando opcionalmente a uma tela pai.
      *
-     * @param screenClass           classe que será montada
-     * @param parentScreenInstance  instância da tela pai
+     * @param screenClass          classe que será montada
+     * @param parentScreenInstance instância da tela pai
      * @return {@link ScreenView} pronto para uso em composições
      */
     private static ScreenView renderFragment(Class<?> screenClass, Object parentScreenInstance) {
@@ -394,10 +394,14 @@ public class ScreenManager {
             return;
         }
 
+        // Desabilita o nó atual
         disableNode(node);
 
-        if (node instanceof Pane pane) {
-            pane.getChildren().forEach(ScreenManager::disableAll);
+        // Se for um container que possui filhos
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                disableAll(child);
+            }
         }
     }
 
@@ -573,6 +577,14 @@ public class ScreenManager {
     }
 
     /**
+     * Retorna o Scene atual do Stage principal, ou {@code null} se não houver cena
+     * definida.
+     */
+    public static Scene getMainScene() {
+        return mainStage != null ? mainStage.getScene() : null;
+    }
+
+    /**
      * Tenta aplicar o menu superior a janela atual
      * 
      * @param topMenu menu superior a ser aplicado
@@ -617,7 +629,8 @@ public class ScreenManager {
 
     /**
      * Retorna um descritor imutavel com as informacoes principais da tela atual.
-     * Serve para expor dados basicos sem permitir acesso direto ao {@code ScreenMetadata} interno.
+     * Serve para expor dados basicos sem permitir acesso direto ao
+     * {@code ScreenMetadata} interno.
      *
      * @return descritor da tela atual ou {@code null} quando nao ha tela carregada
      */
@@ -627,6 +640,24 @@ public class ScreenManager {
         }
 
         return ScreenDescriptor.from(currentMetadata, screenInstance);
+    }
+
+    /**
+     * Retorna o root do elemento pai de um {@link Region}, se existir.
+     * Útil para navegação e manipulação de layouts aninhados.
+     *
+     * @param region elemento filho
+     * @return root do elemento pai ou {@code null} se não houver
+     */
+    public static Region getParentRoot(Region region) {
+        if (region == null) {
+            return null;
+        }
+        Parent parent = region.getParent();
+        if (parent instanceof Region parentRegion) {
+            return parentRegion;
+        }
+        return null;
     }
 
     private static boolean applyTopMenu(MenuBar topMenu, Region root) {

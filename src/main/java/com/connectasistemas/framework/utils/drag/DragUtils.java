@@ -1,10 +1,12 @@
 package com.connectasistemas.framework.utils.drag;
 
 import com.connectasistemas.framework.internal.utils.drag.DragRegistration;
+import com.connectasistemas.framework.internal.utils.drag.NodeDragRegistration;
 import com.connectasistemas.framework.internal.utils.drag.OverlayRegistration;
 import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
 
 import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.layout.Region;
 
 import java.util.ArrayList;
@@ -23,8 +25,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class DragUtils {
 
-    private static final WeakHashMap<Region, DragRegistration> DRAG_REGISTRY = new WeakHashMap<>();
-    private static final WeakHashMap<Region, OverlayRegistration> OVERLAY_REGISTRY = new WeakHashMap<>();
+    private static final WeakHashMap<Region, DragRegistration>     DRAG_REGISTRY      = new WeakHashMap<>();
+    private static final WeakHashMap<Node,   NodeDragRegistration> NODE_DRAG_REGISTRY = new WeakHashMap<>();
+    private static final WeakHashMap<Region, OverlayRegistration>  OVERLAY_REGISTRY   = new WeakHashMap<>();
     
     // Armazena os DelimiterSpecs para poder disparar triggers manualmente
     private static final WeakHashMap<Region, List<DelimiterSpec>> DELIMITER_SPECS_REGISTRY = new WeakHashMap<>();
@@ -145,7 +148,37 @@ public final class DragUtils {
     }
 
     // ---------------------------------------------------------------------
-    // Hover Detection (para ChildFactory e elementos similares)
+    // Drag handlers para Node genérico (ex: TreeCell, Label, ImageView...)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Registra handlers de drag para qualquer {@link Node}.
+     * Use quando o elemento não é uma {@link Region} (ex: {@code TreeCell}, {@code Control}).
+     * Eventuais registros anteriores são substituídos.
+     */
+    public static void registerDragHandlers(Node node, DragHandlers handlers) {
+        Objects.requireNonNull(node,     "node");
+        Objects.requireNonNull(handlers, "handlers");
+
+        unregisterDragHandlers(node);
+        NodeDragRegistration registration = new NodeDragRegistration(node, handlers);
+        registration.install();
+        NODE_DRAG_REGISTRY.put(node, registration);
+    }
+
+    /**
+     * Remove os handlers previamente registrados para o {@link Node} informado.
+     */
+    public static void unregisterDragHandlers(Node node) {
+        if (node == null) return;
+        NodeDragRegistration registration = NODE_DRAG_REGISTRY.remove(node);
+        if (registration != null) {
+            registration.dispose();
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Hover Detection
     // ---------------------------------------------------------------------
     
     /**

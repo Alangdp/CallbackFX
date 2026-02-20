@@ -63,6 +63,11 @@ public class ElementManager {
         
         // TabPane
         registry.put(TabPane.class, TabPane::new);
+
+        // Outros
+        registry.put(Accordion.class, Accordion::new);
+        registry.put(TitledPane.class, TitledPane::new);
+
     }
 
     /**
@@ -133,6 +138,16 @@ public class ElementManager {
             return;
         }
 
+        if (parent instanceof Accordion accordion) {
+            addChildToAccordion(accordion, child);
+            return;
+        }
+
+        if (parent instanceof TitledPane titledPane) {
+            addChildToTitledPane(titledPane, child);
+            return;
+        }
+
         if (!(parent instanceof Region region)) {
             throw new RuntimeException(StringUtils.concat(
                     "Tipo não permitido para adicionar elementos: ",
@@ -193,7 +208,7 @@ public class ElementManager {
         } else if (element instanceof TreeItem<?> treeItem) {
             applyTreeItemLiteral(treeItem, literal);
         }
-
+        
         ElementManager.literal = "";
     }
 
@@ -313,6 +328,18 @@ public class ElementManager {
         TableColumn<?, ?> column = requireTableColumnChild(child, parentColumn.getClass().getSimpleName());
         TableColumn rawColumn = parentColumn;
         rawColumn.getColumns().add(column);
+    }
+
+    private static void addChildToAccordion(Accordion accordion, Object child) {
+        Node nodeChild = requireNodeChild(child, accordion.getClass().getSimpleName());
+        TitledPane titledPane = new TitledPane();
+        titledPane.setContent(nodeChild);
+        accordion.getPanes().add(titledPane);
+    }
+
+    private static void addChildToTitledPane(TitledPane titledPane, Object child) {
+        Node nodeChild = requireNodeChild(child, titledPane.getClass().getSimpleName());
+        titledPane.setContent(nodeChild);
     }
 
     private static Node requireNodeChild(Object child, String parentType) {

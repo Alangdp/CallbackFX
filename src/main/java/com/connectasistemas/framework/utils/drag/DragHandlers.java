@@ -7,7 +7,7 @@ import javafx.scene.input.MouseEvent;
  * Container com os handlers usados durante o ciclo de drag.
  * "onDragUp" é executado continuamente enquanto o drag estiver ativo.
  */
-public final class DragHandlers {
+public class DragHandlers {
     private final EventHandler<MouseEvent> onPress;
     private final EventHandler<MouseEvent> onDrag;
     private final EventHandler<MouseEvent> onRelease;
