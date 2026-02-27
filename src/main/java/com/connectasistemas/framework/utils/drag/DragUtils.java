@@ -8,6 +8,8 @@ import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
+import javafx.event.EventHandler;
+import javafx.scene.input.DragEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Utilitário genérico para auxiliar operações de drag em {@link Region} do JavaFX.
@@ -24,6 +27,19 @@ import java.util.concurrent.atomic.AtomicReference;
  * permitindo que elementos como ChildFactory sejam notificados quando um drag ocorre sobre eles.
  */
 public final class DragUtils {
+
+    /**
+     * Registra um callback para drop (soltar) em uma Region, sem necessidade de overlay ou delimiters.
+     * O callback será chamado quando um drop for realizado sobre a região.
+     *
+     * @param region Região alvo do drop
+     * @param onDrop Callback chamado ao soltar (DragEvent)
+     */
+    public static void registerDropHandler(Region region, EventHandler<DragEvent> onDrop) {
+        Objects.requireNonNull(region, "region");
+        Objects.requireNonNull(onDrop, "onDrop");
+        region.setOnDragDropped(onDrop);
+    }
 
     private static final WeakHashMap<Region, DragRegistration>     DRAG_REGISTRY      = new WeakHashMap<>();
     private static final WeakHashMap<Node,   NodeDragRegistration> NODE_DRAG_REGISTRY = new WeakHashMap<>();
@@ -44,6 +60,12 @@ public final class DragUtils {
     
     // Elemento que está sendo arrastado atualmente (para excluir da notificação de hover)
     private static Region currentDragSource = null;
+
+    // Dado associado ao drag atual (funciona para ambos os sistemas: mouse e nativo JavaFX)
+    private static Object currentDragData = null;
+
+    // Registro de callbacks de drop customizados (sistema de mouse)
+    private static final WeakHashMap<Region, Consumer<Object>> MOUSE_DROP_REGISTRY = new WeakHashMap<>();
 
     private DragUtils() {
     }
@@ -104,8 +126,11 @@ public final class DragUtils {
         if (dragging) {
             notifyHoverListeners(sceneX, sceneY);
         } else {
-            // Quando o drag termina, notifica saída para todos
+            // Quando o drag termina, dispara os mouse drop handlers nas regiões em hover
+            fireMouseDropHandlers();
+            // Notifica saída para todos e limpa o dado do drag
             clearAllHoverStates();
+            clearDragData();
         }
     }
     
@@ -115,6 +140,71 @@ public final class DragUtils {
      */
     public static Region getCurrentDragSource() {
         return currentDragSource;
+    }
+
+    // ---------------------------------------------------------------------
+    // Drag data — compartilhamento de dados entre fonte e destino
+    // ---------------------------------------------------------------------
+
+    /**
+     * Define o dado associado ao drag atual.
+     * Deve ser chamado no {@code onPress} da fonte (sistema de mouse)
+     * ou no {@code onDragDetected} (sistema nativo JavaFX).
+     *
+     * @param data qualquer objeto que represente o item sendo arrastado
+     */
+    public static void setDragData(Object data) {
+        currentDragData = data;
+    }
+
+    /**
+     * Retorna o dado associado ao drag atual.
+     * Disponível tanto para o sistema de mouse quanto para o nativo JavaFX.
+     *
+     * @param <T> tipo esperado do dado
+     * @param type classe do tipo esperado
+     * @return o dado arrastado, ou null se não houver nenhum ou o tipo não bater
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getDragData(Class<T> type) {
+        if (type.isInstance(currentDragData)) {
+            return (T) currentDragData;
+        }
+        return null;
+    }
+
+    /**
+     * Limpa o dado do drag. Chamado automaticamente ao finalizar o drag
+     * via {@link #setDragState(boolean, double, double)}.
+     */
+    public static void clearDragData() {
+        currentDragData = null;
+    }
+
+    // ---------------------------------------------------------------------
+    // Drop handler para sistema de mouse (sem Dragboard)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Registra um callback de drop para o sistema customizado de mouse.
+     * O callback recebe o dado definido via {@link #setDragData(Object)}.
+     * Compatível com {@link #registerDropHandler(Region, EventHandler)} — ambos podem coexistir.
+     *
+     * @param region  região alvo do drop
+     * @param onDrop  callback chamado ao soltar, recebe o dado do drag
+     */
+    public static void registerMouseDropHandler(Region region, Consumer<Object> onDrop) {
+        Objects.requireNonNull(region, "region");
+        Objects.requireNonNull(onDrop, "onDrop");
+        MOUSE_DROP_REGISTRY.put(region, onDrop);
+    }
+
+    /**
+     * Remove o callback de drop do sistema de mouse para a região informada.
+     */
+    public static void unregisterMouseDropHandler(Region region) {
+        if (region == null) return;
+        MOUSE_DROP_REGISTRY.remove(region);
     }
 
     // ---------------------------------------------------------------------
@@ -285,6 +375,20 @@ public final class DragUtils {
                 if (registration.onExit != null) {
                     registration.onExit.run();
                 }
+            }
+        }
+    }
+
+    /**
+     * Dispara os callbacks de drop do sistema de mouse para todas as regiões
+     * que estão em hover no momento em que o drag é finalizado.
+     */
+    private static void fireMouseDropHandlers() {
+        for (HoverDetectionRegistration hoverReg : HOVER_REGISTRY.values()) {
+            if (!hoverReg.isHovering) continue;
+            Consumer<Object> handler = MOUSE_DROP_REGISTRY.get(hoverReg.region);
+            if (handler != null) {
+                handler.accept(currentDragData);
             }
         }
     }

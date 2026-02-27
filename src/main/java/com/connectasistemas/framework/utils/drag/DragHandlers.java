@@ -12,12 +12,20 @@ public class DragHandlers {
     private final EventHandler<MouseEvent> onDrag;
     private final EventHandler<MouseEvent> onRelease;
     private final EventHandler<MouseEvent> onDragUp;
+    private final EventHandler<MouseEvent> onDragDetected;
 
     private DragHandlers(Builder builder) {
         this.onPress = builder.onPress;
         this.onDrag = builder.onDrag;
         this.onRelease = builder.onRelease;
         this.onDragUp = builder.onDragUp;
+        this.onDragDetected = builder.onDragDetected;
+    }
+    /**
+     * Handler para o evento DRAG_DETECTED do JavaFX.
+     */
+    public EventHandler<MouseEvent> onDragDetected() {
+        return onDragDetected;
     }
 
     public EventHandler<MouseEvent> onPress() {
@@ -48,6 +56,14 @@ public class DragHandlers {
         private EventHandler<MouseEvent> onDrag;
         private EventHandler<MouseEvent> onRelease;
         private EventHandler<MouseEvent> onDragUp;
+        private EventHandler<MouseEvent> onDragDetected;
+        /**
+         * Define o handler para DRAG_DETECTED.
+         */
+        public Builder onDragDetected(EventHandler<MouseEvent> handler) {
+            this.onDragDetected = handler;
+            return this;
+        }
 
         private Builder() {
         }

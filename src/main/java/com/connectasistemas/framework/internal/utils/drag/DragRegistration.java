@@ -16,6 +16,7 @@ public final class DragRegistration {
     private final EventHandler<MouseEvent> pressWrapper = this::handlePress;
     private final EventHandler<MouseEvent> dragWrapper = this::handleDrag;
     private final EventHandler<MouseEvent> releaseWrapper = this::handleRelease;
+    private final EventHandler<MouseEvent> dragDetectedWrapper = this::handleDragDetected;
     private boolean dragging;
 
     public DragRegistration(Region region, DragHandlers handlers) {
@@ -27,12 +28,23 @@ public final class DragRegistration {
         region.addEventFilter(MouseEvent.MOUSE_PRESSED, pressWrapper);
         region.addEventFilter(MouseEvent.MOUSE_DRAGGED, dragWrapper);
         region.addEventFilter(MouseEvent.MOUSE_RELEASED, releaseWrapper);
+        if (handlers.onDragDetected() != null) {
+            region.addEventFilter(MouseEvent.DRAG_DETECTED, dragDetectedWrapper);
+        }
     }
 
     public void dispose() {
         region.removeEventFilter(MouseEvent.MOUSE_PRESSED, pressWrapper);
         region.removeEventFilter(MouseEvent.MOUSE_DRAGGED, dragWrapper);
         region.removeEventFilter(MouseEvent.MOUSE_RELEASED, releaseWrapper);
+        if (handlers.onDragDetected() != null) {
+            region.removeEventFilter(MouseEvent.DRAG_DETECTED, dragDetectedWrapper);
+        }
+    }
+    private void handleDragDetected(MouseEvent event) {
+        if (handlers.onDragDetected() != null) {
+            handlers.onDragDetected().handle(event);
+        }
     }
 
     private void handlePress(MouseEvent event) {

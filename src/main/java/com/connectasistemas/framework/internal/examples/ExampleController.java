@@ -31,6 +31,8 @@ import com.connectasistemas.framework.utils.TableManager;
 import com.connectasistemas.framework.utils.TreeManager;
 import com.connectasistemas.framework.utils.delimiter.Delimiter;
 import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
+import com.connectasistemas.framework.utils.drag.DragHandlers;
+import com.connectasistemas.framework.utils.drag.DragUtils;
 
 /**
  * Controller responsável por demonstrar o uso das principais utilidades do
@@ -212,21 +214,20 @@ public class ExampleController {
         if (screen == null || screen.dragTokenLabel == null) {
             return;
         }
+
         Label label = screen.dragTokenLabel;
-        label.setMinSize(240, 36);
-        label.setStyle(
-                "-fx-background-color: #e0e0e0; -fx-padding: 12; -fx-border-color: #8a8a8a; -fx-border-radius: 4; -fx-background-radius: 4;");
-        label.setOnDragDetected(event -> {
-            Dragboard dragboard = label.startDragAndDrop(TransferMode.ANY);
-            ClipboardContent content = new ClipboardContent();
-            content.putString("delimiter-demo-token");
-            dragboard.setContent(content);
-            event.consume();
-        });
-        label.setOnDragDone(event -> {
-            addEventLog(screen, StringUtils.concat("Drag finalizado com modo: ", event.getTransferMode()));
-            event.consume();
-        });
+
+        DragHandlers handlers = DragHandlers.builder()
+            .onDragDetected(event -> {
+                Dragboard dragboard = label.startDragAndDrop(TransferMode.ANY);
+                ClipboardContent content = new ClipboardContent();
+                content.putString("token-demo");
+                dragboard.setContent(content);
+                event.consume();
+            })
+            .build();
+
+        DragUtils.registerDragHandlers(label, handlers);
     }
 
     private void seedProjects(Example screen) {
