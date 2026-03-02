@@ -1,7 +1,7 @@
 package com.connectasistemas.framework.internal.examples.views;
 
+import com.connectasistemas.framework.utils.EventContext;
 import com.connectasistemas.framework.utils.ScreenManager;
-import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
 
 /**
@@ -16,7 +16,7 @@ public class ProjectTreeEditorCallbacks {
         }
     }
 
-    public void callbackAltcamConfirmButton(ProjectTreeEditor screen) {
+    public void callbackAltcamConfirmButton(ProjectTreeEditor screen, EventContext context) {
         if (screen == null) {
             return;
         }
@@ -24,7 +24,7 @@ public class ProjectTreeEditorCallbacks {
         String folderName = screen.folderNameInput != null ? screen.folderNameInput.getText() : "";
         if (StringUtils.isBlank(folderName)) {
             updateStatus(screen, "Informe um nome válido");
-            Status.markError(screen.folderNameInput);
+            context.markError(screen.folderNameInput);
             return;
         }
 

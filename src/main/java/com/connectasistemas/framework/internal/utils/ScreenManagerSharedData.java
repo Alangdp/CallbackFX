@@ -5,112 +5,110 @@ import javafx.scene.layout.Region;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
+import com.connectasistemas.framework.utils.ScreenRuntimeContext;
 import com.connectasistemas.framework.utils.StringUtils;
 
 /**
- * Gerencia dados compartilhados entre telas
+ * Gerencia dados compartilhados entre telas.
+ * Delega para {@link ScreenRuntimeContext#getDefault()}.
  */
 public class ScreenManagerSharedData {
-    // Mapa de @Screen -> (Acronym -> elemento instanciado)
-    private static final Map<Object, Map<String, Object>> CACHE = new WeakHashMap<>();
+
+    private static final ScreenRuntimeContext ctx = ScreenRuntimeContext.getDefault();
 
     /**
-     * Apaga dados de uma tela
-     * @param key Objeto da tela
+     * Apaga dados de uma tela.
+     *
+     * @param key objeto da tela
      */
     public static void resetScreenData(Object key) {
         if (key == null) {
             return;
         }
-        CACHE.remove(key);
+        ctx.getSharedDataCache().remove(key);
     }
 
     /**
-     * Apaga dados de todas as telas salvas
+     * Apaga dados de todas as telas salvas.
      */
     public static void resetScreenData() {
-        CACHE.clear();
+        ctx.getSharedDataCache().clear();
     }
 
     /**
-     * Retorna o Map usado como cache
-     * OBS: é usado para manipulação mais fácil de elementos
-     * @return Cache por janela por acronym
+     * Retorna o Map usado como cache.
+     *
+     * @return cache por janela por acronym
      */
     public static Map<Object, Map<String, Object>> getCache() {
-        return CACHE;
+        return ctx.getSharedDataCache();
     }
 
     /**
-     * Adiciona um elemento no Cache
+     * Adiciona um elemento no cache.
      *
-     * @param screen Objeto da tela atual
-     * @param key    Acronym do campo
-     * @param value  Instância do elemento em tela
+     * @param screen objeto da tela atual
+     * @param key    acronym do campo
+     * @param value  instancia do elemento em tela
      */
     public static void setScreenData(Object screen, String key, Object value) {
-        // Caso não exista um Map para a tela atual cria-o
         if (screen == null) {
             throw new IllegalArgumentException(StringUtils.concat(
-                    "Tela não pode ser nula ao registrar dados"));
+                    "Tela nao pode ser nula ao registrar dados"));
         }
 
         if (value == null) {
             throw new IllegalArgumentException(StringUtils.concat(
-                    "Elemento não pode ser nulo ao registrar dados"));
+                    "Elemento nao pode ser nulo ao registrar dados"));
         }
 
-        CACHE.putIfAbsent(screen, new HashMap<>());
+        Map<Object, Map<String, Object>> cache = ctx.getSharedDataCache();
+        cache.putIfAbsent(screen, new HashMap<>());
 
-        // Tenta obter o elemento a ser adicionado
-        Map<String, Object> screenData = CACHE.get(screen);
+        Map<String, Object> screenData = cache.get(screen);
         Object node = screenData.get(key);
 
-        // Caso já exista retorna uma exceção
         if (node != null) {
             throw new RuntimeException(StringUtils.concat(
-                    "Elemento já adicionado para a tela atual: ", key));
+                    "Elemento ja adicionado para a tela atual: ", key));
         }
 
-        // Adiciona o elemento na lista
         screenData.putIfAbsent(key, value);
     }
 
     /**
-     * Procura um elemento no Cache
+     * Procura um elemento no cache.
      *
-     * @param screen Objeto da tela atual
-     * @param key    Acronym do campo
-     * @return Node retornado
+     * @param screen objeto da tela atual
+     * @param key    acronym do campo
+     * @return elemento encontrado
      */
     public static Object getScreenData(Object screen, String key) {
-        // Caso não exista um Map para a tela atual cria-o
         if (screen == null) {
             throw new IllegalArgumentException(StringUtils.concat(
-                    "Tela não pode ser nula ao consultar dados"));
+                    "Tela nao pode ser nula ao consultar dados"));
         }
 
-        CACHE.putIfAbsent(screen, new HashMap<>());
+        Map<Object, Map<String, Object>> cache = ctx.getSharedDataCache();
+        cache.putIfAbsent(screen, new HashMap<>());
 
-        // Tenta obter o elemento a ser adicionado
-        Map<String, Object> screenData = CACHE.get(screen);
+        Map<String, Object> screenData = cache.get(screen);
         Object node = screenData.get(key);
 
         if (node == null) {
             throw new RuntimeException(StringUtils.concat(
-                    "Elemento procurado não existe: ", key));
+                    "Elemento procurado nao existe: ", key));
         }
 
         return node;
     }
 
     /**
-     * Procura um elemento no Cache como Node
+     * Procura um elemento no cache como Node.
      *
-     * @param screen Objeto da tela atual
-     * @param key    Acronym do campo
+     * @param screen objeto da tela atual
+     * @param key    acronym do campo
      * @return Node retornado
      */
     public static Node getScreenDataAsNode(Object screen, String key) {
@@ -121,32 +119,31 @@ public class ScreenManagerSharedData {
         }
 
         throw new RuntimeException(StringUtils.concat(
-                "Elemento procurado não é um Node: ", key));
+                "Elemento procurado nao e um Node: ", key));
     }
 
     /**
-     * Procura um elemento no Cache como Region
+     * Procura um elemento no cache como Region.
      *
-     * @param screen Objeto da tela atual
-     * @param key    Acronym do campo
-     * @return Node retornado
+     * @param screen objeto da tela atual
+     * @param key    acronym do campo
+     * @return Region retornado
      */
     public static Region getScreenDataAsRegion(Object screen, String key) {
-        // Tenta obter o elemento a ser adicionado
-        Map<String, Object> screenData = CACHE.get(screen);
+        Map<String, Object> screenData = ctx.getSharedDataCache().get(screen);
         if (screenData == null) {
-            throw new RuntimeException(StringUtils.concat("Tela não registrada ao procurar o elemento: ", key));
+            throw new RuntimeException(StringUtils.concat("Tela nao registrada ao procurar o elemento: ", key));
         }
 
         Object node = screenData.get(key);
         if (node == null) {
-            throw new RuntimeException(StringUtils.concat("Elemento procurado não existe: ", key));
+            throw new RuntimeException(StringUtils.concat("Elemento procurado nao existe: ", key));
         }
 
         if (node instanceof Region region) {
             return region;
         }
 
-        throw new RuntimeException(StringUtils.concat("Elemento procurado não é um Region: ", key));
+        throw new RuntimeException(StringUtils.concat("Elemento procurado nao e um Region: ", key));
     }
 }

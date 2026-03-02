@@ -1,8 +1,8 @@
 package com.connectasistemas.framework.enums;
 
 /**
- * Razão do evento de saída
- * OBS: Usado para carregar o Status.VALIDA corretamente
+ * Razao do evento de saida de foco.
+ * Determina se a validacao deve ser disparada ao navegar entre campos.
  */
 public enum FocusExitReason {
     TAB,

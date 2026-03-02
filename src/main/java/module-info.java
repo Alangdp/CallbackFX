@@ -3,6 +3,7 @@ module com.connectasistemas.framework {
     requires javafx.base;
     requires transitive javafx.controls;
     requires transitive javafx.graphics;
+    requires java.desktop;
 
     exports com.connectasistemas.framework.annotation;
     exports com.connectasistemas.framework.enums;

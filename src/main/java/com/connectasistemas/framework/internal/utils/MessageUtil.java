@@ -12,7 +12,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
 import com.connectasistemas.framework.enums.FocusExitReason;
-import com.connectasistemas.framework.utils.Status;
+import com.connectasistemas.framework.utils.EventContext;
 
 /**
  * Utilitário para exibir mensagens no JavaFX.
@@ -65,14 +65,29 @@ public class MessageUtil {
     }
 
     /**
-     * Exibe um alerta de confirmação com botões Confirmar e Cancelar.
-     * O diálogo respeita a tecla ESC como atalho para cancelar.
+     * Exibe um alerta de confirmacao com botoes Confirmar e Cancelar.
+     * O dialogo respeita a tecla ESC como atalho para cancelar.
+     * Delega para o overload que recebe {@link EventContext}.
      *
-     * @param title   Título da janela
-     * @param message Mensagem apresentada no corpo do alerta
-     * @return true quando o usuário confirma; false caso contrário
+     * @param title   titulo da janela
+     * @param message mensagem apresentada no corpo do alerta
+     * @return true quando o usuario confirma; false caso contrario
      */
     public static boolean confirm(String title, String message) {
+        return confirm(title, message, EventContext.getDefault());
+    }
+
+    /**
+     * Exibe um alerta de confirmacao com botoes Confirmar e Cancelar.
+     * O dialogo respeita a tecla ESC como atalho para cancelar.
+     * Opera sobre o {@link EventContext} informado.
+     *
+     * @param title   titulo da janela
+     * @param message mensagem apresentada no corpo do alerta
+     * @param context contexto de evento que recebera os estados de confirmacao
+     * @return true quando o usuario confirma; false caso contrario
+     */
+    public static boolean confirm(String title, String message, EventContext context) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
@@ -84,11 +99,11 @@ public class MessageUtil {
 
         DialogPane dialogPane = alert.getDialogPane();
         Button cancelNode = (Button) dialogPane.lookupButton(cancelButton);
-        // Trata a tecla ESC como ação de cancelamento explícita
+        // Trata a tecla ESC como acao de cancelamento explicita
         dialogPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
-                Status.CONFIRMED_SELECTION = false;
-                Status.registerExitReason(FocusExitReason.ESC);
+                context.setConfirmedSelection(false);
+                context.registerExitReason(FocusExitReason.ESC);
                 if (cancelNode != null) {
                     cancelNode.fire();
                 } else {
@@ -100,10 +115,13 @@ public class MessageUtil {
 
         Optional<ButtonType> result = alert.showAndWait();
         boolean confirmed = result.isPresent() && result.get() == confirmButton;
-        Status.CONFIRMED_SELECTION = confirmed;
-        if (Status.EXIT_REASON != FocusExitReason.ESC) {
-            Status.registerExitReason(FocusExitReason.OTHER);
+
+        // Atualiza o EventContext
+        context.setConfirmedSelection(confirmed);
+        if (context.getExitReason() != FocusExitReason.ESC) {
+            context.registerExitReason(FocusExitReason.OTHER);
         }
+
         return confirmed;
     }
 }

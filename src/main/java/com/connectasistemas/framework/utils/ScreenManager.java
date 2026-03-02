@@ -1,10 +1,7 @@
 package com.connectasistemas.framework.utils;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
-import java.util.Stack;
-import java.util.WeakHashMap;
 
 import com.connectasistemas.framework.annotation.ScreenProperties;
 import com.connectasistemas.framework.internal.properties.TabVisibilityManager;
@@ -29,30 +26,31 @@ import javafx.stage.Stage;
 
 /**
  * Orquestra o ciclo de vida das telas anotadas com {@code @Screen}, cuidando da
- * troca do {@link Stage} principal, gerenciamento de sub-janelas, histórico de
- * navegação e controle de elementos armazenados em cache.
+ * troca do {@link Stage} principal, gerenciamento de sub-janelas, historico de
+ * navegacao e controle de elementos armazenados em cache.
+ * <p>
+ * O estado de navegacao e armazenado em {@link ScreenRuntimeContext}.
+ * Todos os metodos estaticos delegam para a instancia padrao do contexto;
+ * novas integracoes devem obter o contexto via {@link #getDefault()} e
+ * operar diretamente sobre ele quando possivel.
  */
 public class ScreenManager {
 
-    // Referência global do Stage atual
-    private static Stage mainStage;
+    // Contexto padrao compartilhado (substitui os antigos campos static)
+    private static final ScreenRuntimeContext ctx = ScreenRuntimeContext.getDefault();
 
-    // Referência atual da tela
-    // OBS: é a referência de @Screen não do javaFX
-    private static Object screenInstance;
-
-    // Instância do binder de propriedades genéricas
-    // OBS: Poderia ser estático, mas quero manter como interface pois alguns
-    // elementos futuros terão de ser diferente
+    // Binder de propriedades genericas (stateless, pode permanecer static)
     private static final PropertiesBinderGeneric propertiesBinderGeneric = new PropertiesBinderGeneric();
 
-    private static boolean changeInProgress;
-    private static Class<?> deferredScreenClass;
-    private static final Stack<Class<?>> screenHistory = new Stack<>();
-    private static ScreenMetadata currentMetadata;
-    private static final ThreadLocal<Deque<ScreenCompositionMetadata>> composingMetadata = ThreadLocal
-            .withInitial(ArrayDeque::new);
-    private static final Map<Object, Stage> childStages = new WeakHashMap<>();
+    /**
+     * Retorna o {@link ScreenRuntimeContext} padrao utilizado pelos metodos
+     * estaticos desta classe.
+     *
+     * @return contexto de navegacao padrao
+     */
+    public static ScreenRuntimeContext getDefault() {
+        return ctx;
+    }
 
     /**
      * Armazena o {@link Stage} principal e aplica os listeners básicos de ciclo de
@@ -61,22 +59,22 @@ public class ScreenManager {
      * @param stage instância criada pelo JavaFX
      */
     public static void init(Stage stage) {
-        // Guarda a referência inicial uma única vez
-        mainStage = stage;
+        // Guarda a referencia inicial uma unica vez
+        ctx.setMainStage(stage);
 
         // Evento geral de fechamento da janela
-        mainStage.setOnCloseRequest(e -> {
-            // Limpa referência de elementos relacionados a tela antiga
+        stage.setOnCloseRequest(e -> {
+            // Limpa referencia de elementos relacionados a tela antiga
             clearPreviousScreen();
         });
 
-        // Inicializa a exibição da janela
+        // Inicializa a exibicao da janela
         // OBS: Inicializar duas vezes causa problemas
-        mainStage.show();
+        stage.show();
 
         // Tenta centralizar a janela na tela
-        if (mainStage.getScene() != null && mainStage.getScene().getWindow() != null) {
-            mainStage.getScene().getWindow().centerOnScreen();
+        if (stage.getScene() != null && stage.getScene().getWindow() != null) {
+            stage.getScene().getWindow().centerOnScreen();
         }
     }
 
@@ -91,27 +89,27 @@ public class ScreenManager {
             return;
         }
 
-        if (changeInProgress) {
-            // Memoriza a próxima tela para processar após a troca atual
-            deferredScreenClass = screenClass;
+        if (ctx.isChangeInProgress()) {
+            // Memoriza a proxima tela para processar apos a troca atual
+            ctx.setDeferredScreenClass(screenClass);
             return;
         }
 
-        // Evita reentrância enquanto a troca está em andamento
-        changeInProgress = true;
+        // Evita reentrancia enquanto a troca esta em andamento
+        ctx.setChangeInProgress(true);
         try {
             Class<?> nextScreen = screenClass;
             while (nextScreen != null) {
-                // Zera referência antes de cada iteração
-                deferredScreenClass = null;
+                // Zera referencia antes de cada iteracao
+                ctx.setDeferredScreenClass(null);
                 // Gera a tela e aplica no Stage
                 performScreenChange(nextScreen);
-                // Caso algum callback solicite outra tela, processamos na sequência
-                nextScreen = deferredScreenClass;
+                // Caso algum callback solicite outra tela, processamos na sequencia
+                nextScreen = ctx.getDeferredScreenClass();
             }
         } finally {
-            // Libera o bloqueio mesmo em caso de exceção
-            changeInProgress = false;
+            // Libera o bloqueio mesmo em caso de excecao
+            ctx.setChangeInProgress(false);
         }
     }
 
@@ -129,7 +127,7 @@ public class ScreenManager {
      * @return view contendo instância, metadados e root
      */
     private static ScreenView renderFragment(Class<?> screenClass) {
-        return renderFragment(screenClass, screenInstance);
+        return renderFragment(screenClass, ctx.getScreenInstance());
     }
 
     /**
@@ -167,7 +165,7 @@ public class ScreenManager {
      * @return {@link Stage} criado para a sub janela
      */
     public static Stage openChildWindow(Class<?> screenClass) {
-        return openChildWindow(screenClass, screenInstance);
+        return openChildWindow(screenClass, ctx.getScreenInstance());
     }
 
     /**
@@ -185,12 +183,13 @@ public class ScreenManager {
                     "Classe da tela não pode ser nula ao abrir sub janela"));
         }
 
+        Stage mainStage = ctx.getMainStage();
         if (mainStage == null) {
             throw new IllegalStateException(StringUtils.concat(
                     "Stage principal não foi inicializado"));
         }
 
-        // Composição da tela filha reaproveitando o assembler padrão
+        // Composicao da tela filha reaproveitando o assembler padrao
         ScreenView view = ScreenAssembler.compose(screenClass, parentScreenInstance);
         ScreenControllerRegistry.register(view);
 
@@ -205,7 +204,7 @@ public class ScreenManager {
         childStage.setHeight(metadata.getHeight());
 
         if (screenProperties != null) {
-            // Reaproveita o binder genérico para aplicar propriedades no Stage filho
+            // Reaproveita o binder generico para aplicar propriedades no Stage filho
             propertiesBinderGeneric.applyToStage(screenProperties, childStage);
         }
 
@@ -214,7 +213,7 @@ public class ScreenManager {
         childStage.setScene(scene);
 
         // Controla o ciclo de vida da sub janela para liberar recursos automaticamente
-        childStages.put(view.screenInstance(), childStage);
+        ctx.getChildStages().put(view.screenInstance(), childStage);
         childStage.setOnHidden(event -> disposeScreenHierarchy(view.screenInstance()));
 
         childStage.show();
@@ -234,7 +233,7 @@ public class ScreenManager {
             return;
         }
 
-        Stage childStage = childStages.remove(childInstance);
+        Stage childStage = ctx.getChildStages().remove(childInstance);
         if (childStage == null) {
             return;
         }
@@ -253,19 +252,22 @@ public class ScreenManager {
      */
     private static void performScreenChange(Class<?> screenClass) {
         try {
-            // Guarda referência para empilhar histórico posteriormente
-            Object previousInstance = screenInstance;
+            Stage mainStage = ctx.getMainStage();
 
-            // Limpa referência de elementos relacionados a tela antiga
+            // Guarda referencia para empilhar historico posteriormente
+            Object previousInstance = ctx.getScreenInstance();
+
+            // Limpa referencia de elementos relacionados a tela antiga
             clearPreviousScreen();
             // Monta a nova tela e registra controller
             ScreenView view = ScreenAssembler.compose(screenClass);
             ScreenControllerRegistry.register(view);
-            screenInstance = view.screenInstance();
-            ScreenMetadata meta = currentMetadata = view.metadata();
+            ctx.setScreenInstance(view.screenInstance());
+            ScreenMetadata meta = view.metadata();
+            ctx.setCurrentMetadata(meta);
             ScreenProperties screenProperties = view.screenProperties();
 
-            // Atualiza título e tamanho
+            // Atualiza titulo e tamanho
             mainStage.setTitle(meta.getTitle());
             mainStage.setWidth(meta.getWidth());
             mainStage.setHeight(meta.getHeight());
@@ -275,16 +277,16 @@ public class ScreenManager {
                 propertiesBinderGeneric.applyToStage(screenProperties, mainStage);
             }
 
-            // Cria a cena com o novo root antes de verificar centralização
+            // Cria a cena com o novo root antes de verificar centralizacao
             Scene scene = new Scene(view.root());
 
-            if (deferredScreenClass != null) {
+            if (ctx.getDeferredScreenClass() != null) {
                 return;
             }
 
             if (previousInstance != null && previousInstance.getClass() != screenClass) {
-                // Empilha o histórico somente quando a classe realmente mudou
-                screenHistory.push(previousInstance.getClass());
+                // Empilha o historico somente quando a classe realmente mudou
+                ctx.getScreenHistory().push(previousInstance.getClass());
             }
 
             // Tenta centralizar a janela na tela
@@ -292,7 +294,7 @@ public class ScreenManager {
                 scene.getWindow().centerOnScreen();
             }
 
-            // Aplica a cena recém-criada no Stage principal
+            // Aplica a cena recem-criada no Stage principal
             mainStage.setScene(scene);
         } catch (Exception e) {
             e.printStackTrace();
@@ -303,22 +305,23 @@ public class ScreenManager {
      * Verifica se é possível retornar para a tela anterior no histórico.
      */
     public static boolean canGoBack() {
-        return !screenHistory.isEmpty();
+        return !ctx.getScreenHistory().isEmpty();
     }
 
     /**
-     * Retorna para a tela anterior no histórico, se possível.
+     * Retorna para a tela anterior no historico, se possivel.
      */
     public static void goBack() {
-        // Caso não haja tela anterior, encerra a aplicação
+        // Caso nao haja tela anterior, encerra a aplicacao
         if (!canGoBack()) {
+            Stage mainStage = ctx.getMainStage();
             if (mainStage != null) {
                 mainStage.close();
             }
             return;
         }
 
-        Class<?> previous = screenHistory.pop();
+        Class<?> previous = ctx.getScreenHistory().pop();
         changeTo(previous);
     }
 
@@ -327,13 +330,13 @@ public class ScreenManager {
      * preparando o Stage para receber uma nova composição.
      */
     private static void clearPreviousScreen() {
-        if (screenInstance == null) {
+        if (ctx.getScreenInstance() == null) {
             return;
         }
 
-        disposeScreenHierarchy(screenInstance);
-        screenInstance = null;
-        currentMetadata = null;
+        disposeScreenHierarchy(ctx.getScreenInstance());
+        ctx.setScreenInstance(null);
+        ctx.setCurrentMetadata(null);
     }
 
     /**
@@ -350,9 +353,9 @@ public class ScreenManager {
         // Remove o controller associado a esta instância
         ScreenControllerRegistry.unregister(instance);
 
-        Stage childStage = childStages.remove(instance);
+        Stage childStage = ctx.getChildStages().remove(instance);
         if (childStage != null && childStage.isShowing()) {
-            // Garante que o listener de fechamento não tente dupla liberação
+            // Garante que o listener de fechamento nao tente dupla liberacao
             childStage.setOnHidden(null);
             childStage.close();
         }
@@ -370,11 +373,12 @@ public class ScreenManager {
      * informada. Útil para bloquear interações temporariamente.
      */
     public static void disableWindow(Class<?> screenClass) {
-        if (screenClass == null || screenInstance == null || screenInstance.getClass() != screenClass) {
+        Object instance = ctx.getScreenInstance();
+        if (screenClass == null || instance == null || instance.getClass() != screenClass) {
             return;
         }
 
-        Map<String, Object> cachedNodes = ScreenManagerSharedData.getCache().get(screenInstance);
+        Map<String, Object> cachedNodes = ScreenManagerSharedData.getCache().get(instance);
         if (cachedNodes == null) {
             return;
         }
@@ -461,11 +465,11 @@ public class ScreenManager {
             return;
         }
 
-        if (screenInstance == null) {
+        if (ctx.getScreenInstance() == null) {
             return;
         }
 
-        Object element = ScreenManagerSharedData.getScreenData(screenInstance, acronym);
+        Object element = ScreenManagerSharedData.getScreenData(ctx.getScreenInstance(), acronym);
         setElementVisibility(element, visible);
     }
 
@@ -557,30 +561,33 @@ public class ScreenManager {
      * Altera o título da janela atual
      */
     public static void setWindowTitle(String title) {
+        Stage mainStage = ctx.getMainStage();
         if (mainStage != null) {
             mainStage.setTitle(title);
         }
     }
 
     /**
-     * Retorna o título atual da janela
+     * Retorna o titulo atual da janela
      */
     public static String getWindowTitle() {
+        Stage mainStage = ctx.getMainStage();
         return mainStage != null ? mainStage.getTitle() : "";
     }
 
     /**
-     * Retorna o Stage principal da aplicação
+     * Retorna o Stage principal da aplicacao
      */
     public static Stage getMainStage() {
-        return mainStage;
+        return ctx.getMainStage();
     }
 
     /**
-     * Retorna o Scene atual do Stage principal, ou {@code null} se não houver cena
+     * Retorna o Scene atual do Stage principal, ou {@code null} se nao houver cena
      * definida.
      */
     public static Scene getMainScene() {
+        Stage mainStage = ctx.getMainStage();
         return mainStage != null ? mainStage.getScene() : null;
     }
 
@@ -605,14 +612,14 @@ public class ScreenManager {
         }
 
         if (applyTopMenu(topMenu, metadata.root())) {
-            if (metadata == currentMetadata) {
-                // Menu aplicado diretamente à tela atual
+            if (metadata == ctx.getCurrentMetadata()) {
+                // Menu aplicado diretamente a tela atual
                 pendingTopMenu = null;
             }
             return;
         }
 
-        if (metadata == currentMetadata) {
+        if (metadata == ctx.getCurrentMetadata()) {
             // Registra para reaplicar assim que o layout suportar
             pendingTopMenu = topMenu;
         }
@@ -624,7 +631,8 @@ public class ScreenManager {
      * @return root atual da tela
      */
     public static Node getRoot() {
-        return currentMetadata != null ? currentMetadata.root() : null;
+        ScreenMetadata meta = ctx.getCurrentMetadata();
+        return meta != null ? meta.root() : null;
     }
 
     /**
@@ -635,11 +643,12 @@ public class ScreenManager {
      * @return descritor da tela atual ou {@code null} quando nao ha tela carregada
      */
     public static ScreenDescriptor getCurrentScreenDescriptor() {
-        if (currentMetadata == null) {
+        ScreenMetadata meta = ctx.getCurrentMetadata();
+        if (meta == null) {
             return null;
         }
 
-        return ScreenDescriptor.from(currentMetadata, screenInstance);
+        return ScreenDescriptor.from(meta, ctx.getScreenInstance());
     }
 
     /**
@@ -687,7 +696,7 @@ public class ScreenManager {
             return;
         }
 
-        composingMetadata.get().push(metadata);
+        ctx.getComposingMetadataStack().push(metadata);
     }
 
     /**
@@ -695,7 +704,7 @@ public class ScreenManager {
      * consistente.
      */
     public static void popCompositionMetadata(ScreenCompositionMetadata metadata) {
-        Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
+        Deque<ScreenCompositionMetadata> stack = ctx.getComposingMetadataStack();
         if (stack.isEmpty()) {
             return;
         }
@@ -706,20 +715,18 @@ public class ScreenManager {
             stack.remove(metadata);
         }
 
-        if (stack.isEmpty()) {
-            composingMetadata.remove();
-        }
+        ctx.clearComposingMetadata();
     }
 
     /**
      * Resolve qual metadado deve receber o menu superior (pilha ou tela atual).
      */
     private static ScreenCompositionMetadata resolveTopMenuMetadata() {
-        Deque<ScreenCompositionMetadata> stack = composingMetadata.get();
+        Deque<ScreenCompositionMetadata> stack = ctx.getComposingMetadataStack();
         if (!stack.isEmpty()) {
             return stack.peek();
         }
 
-        return currentMetadata;
+        return ctx.getCurrentMetadata();
     }
 }

@@ -4,6 +4,7 @@ import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.internal.events.*;
 import com.connectasistemas.framework.internal.interfaces.EventBinderEvents;
+import com.connectasistemas.framework.utils.ScreenRuntimeContext;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -18,23 +19,21 @@ import javafx.scene.control.TreeView;
 import java.util.*;
 
 /**
- * Responsável por "Ativar" os eventos do javaFx e interligar eles com os callbacks personalizados
+ * Responsavel por "Ativar" os eventos do javaFx e interligar eles com os
+ * callbacks personalizados. O mapa de eventos agora reside em
+ * {@link ScreenRuntimeContext}.
  */
 public class EventBinder {
 
-    // Map com a seguinte hierarquia
-    // Instância de tela -> Map de elementos -> Lista de eventos
-    // Tem essa hierarquia para poder apagar eventos de maneira simples, tive alguns problemas chatos com JavaFX por...
-    // ...Causa disso
-    private static final Map<Object, Map<Object, List<Runnable>>> EVENT_MAP = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final ScreenRuntimeContext ctx = ScreenRuntimeContext.getDefault();
 
     /**
-     * Vincula os eventos do javaFX com as funções de callback baseado na entrada
+     * Vincula os eventos do javaFX com as funcoes de callback baseado na entrada.
      *
-     * @param acronym Sigla da campo
-     * @param element Instância do elemento
-     * @param screenInstance Instância da tela
-     * @param callbacksInstance Instância do controller
+     * @param acronym           sigla do campo
+     * @param element           instancia do elemento
+     * @param screenInstance    instancia da tela
+     * @param callbacksInstance instancia do controller
      */
     public static void attach(
             String acronym,
@@ -72,7 +71,7 @@ public class EventBinder {
     }
 
     /**
-     * Registra o elemento no mapa interno e executa a configuração específica de
+     * Registra o elemento no mapa interno e executa a configuracao especifica de
      * eventos.
      */
     private static void attachElement(
@@ -86,14 +85,15 @@ public class EventBinder {
             return;
         }
 
-        EVENT_MAP.computeIfAbsent(screenInstance, k -> new HashMap<>());
-        Map<Object, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
+        Map<Object, Map<Object, List<Runnable>>> eventMap = ctx.getEventMap();
+        eventMap.computeIfAbsent(screenInstance, k -> new HashMap<>());
+        Map<Object, List<Runnable>> screenEvents = eventMap.get(screenInstance);
 
         if (screenEvents.containsKey(element)) {
             return;
         }
 
-        // Permite que o controller configure o elemento antes dos eventos padrão
+        // Permite que o controller configure o elemento antes dos eventos padrao
         CallbackInvoker.call(callbacksInstance, screenInstance, "config", acronym);
 
         List<Runnable> unregisters = new ArrayList<>();
@@ -109,13 +109,15 @@ public class EventBinder {
     }
 
     /**
-     * Deleta todos os eventos vinculadas a tela de entrada
-     * @param screenInstance Instância da tela
+     * Deleta todos os eventos vinculados a tela de entrada.
+     *
+     * @param screenInstance instancia da tela
      */
     public static void deleteEvents(Object screenInstance) {
         if (screenInstance == null) return;
 
-        Map<Object, List<Runnable>> screenEvents = EVENT_MAP.get(screenInstance);
+        Map<Object, Map<Object, List<Runnable>>> eventMap = ctx.getEventMap();
+        Map<Object, List<Runnable>> screenEvents = eventMap.get(screenInstance);
         if (screenEvents == null) return;
 
         for (var entry : screenEvents.entrySet()) {
@@ -128,6 +130,6 @@ public class EventBinder {
             }
         }
 
-        EVENT_MAP.remove(screenInstance);
+        eventMap.remove(screenInstance);
     }
 }

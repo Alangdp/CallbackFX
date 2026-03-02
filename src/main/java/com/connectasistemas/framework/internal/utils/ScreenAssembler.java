@@ -181,8 +181,8 @@ public final class ScreenAssembler {
             return composeNestedScreen(view, type);
         }
 
-        ElementManager.setLiteral(definition.literal());
-        return ElementManager.createElement(type);
+        // Cria o elemento passando o literal diretamente
+        return ElementManager.createElement(type, definition.literal());
     }
 
     /**

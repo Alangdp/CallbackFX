@@ -23,9 +23,9 @@ import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor;
 import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor.ProjectTreeEditorListener;
 import com.connectasistemas.framework.internal.utils.MessageUtil;
 import com.connectasistemas.framework.utils.DateTimeUtils;
+import com.connectasistemas.framework.utils.EventContext;
 import com.connectasistemas.framework.utils.NumberUtils;
 import com.connectasistemas.framework.utils.ScreenManager;
-import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
 import com.connectasistemas.framework.utils.TableManager;
 import com.connectasistemas.framework.utils.TreeManager;
@@ -158,8 +158,8 @@ public class ExampleController {
         addEventLog(screen, StringUtils.concat("Inspeção de projeto: ", project.name()));
     }
 
-    public void callbackAltcamSaveButton(Example screen) {
-        saveProject(screen);
+    public void callbackAltcamSaveButton(Example screen, EventContext context) {
+        saveProject(screen, context);
     }
 
     public void callbackAltcamClearButton(Example screen) {
@@ -381,8 +381,8 @@ public class ExampleController {
         screen.descriptionInput.setText(project.description());
     }
 
-    private void saveProject(Example screen) {
-        if (!validateForm(screen)) {
+    private void saveProject(Example screen, EventContext context) {
+        if (!validateForm(screen, context)) {
             return;
         }
 
@@ -402,7 +402,7 @@ public class ExampleController {
         updateMetrics(screen);
         updateStatus(screen, StringUtils.concat("Projeto salvo: ", name));
         addEventLog(screen, StringUtils.concat("Registro atualizado: ", name));
-        Status.clearError();
+        context.clearError();
     }
 
     private void clearForm(Example screen) {
@@ -422,29 +422,29 @@ public class ExampleController {
         addEventLog(screen, "Campos retornaram ao estado inicial");
     }
 
-    private boolean validateForm(Example screen) {
+    private boolean validateForm(Example screen, EventContext context) {
         if (screen == null) {
             return false;
         }
 
         String name = StringUtils.trim(screen.projectNameField.getValue());
         if (StringUtils.isBlank(name)) {
-            Status.markError(screen.projectNameField.getTextField());
-            MessageUtil.warn("Validação", "Informe o nome do recurso.");
+            context.markError(screen.projectNameField.getTextField());
+            MessageUtil.warn("Validacao", "Informe o nome do recurso.");
             return false;
         }
 
         String owner = StringUtils.trim(screen.ownerField.getValue());
         if (StringUtils.isBlank(owner)) {
-            Status.markError(screen.ownerField.getTextField());
-            MessageUtil.warn("Validação", "Informe o responsável pelo recurso.");
+            context.markError(screen.ownerField.getTextField());
+            MessageUtil.warn("Validacao", "Informe o responsavel pelo recurso.");
             return false;
         }
 
         int version = NumberUtils.toInt(screen.versionField.getValue());
         if (version <= 0 || version > 99) {
-            Status.markError(screen.versionField.getTextField());
-            MessageUtil.warn("Validação", "Versão deve estar entre 1 e 99.");
+            context.markError(screen.versionField.getTextField());
+            MessageUtil.warn("Validacao", "Versao deve estar entre 1 e 99.");
             return false;
         }
 

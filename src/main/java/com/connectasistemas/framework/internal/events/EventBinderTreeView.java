@@ -14,7 +14,6 @@ import javafx.scene.input.MouseEvent;
 import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.internal.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.internal.utils.CallbackInvoker;
-import com.connectasistemas.framework.utils.Status;
 
 /**
  * Binder de eventos para {@link TreeView}.
@@ -56,13 +55,13 @@ public class EventBinderTreeView extends EventBinderEvents {
 
             publishEvent(EventType.SAICAM);
 
-            if (Status.consumeValidationSkip()) {
-                Status.VALIDA = false;
+            if (consumeValidationSkip()) {
+                changeValida(false);
                 clearExitReason();
                 return;
             }
 
-            Status.VALIDA = shouldValidateOnExit();
+            changeValida(shouldValidateOnExit());
 
             if (hasSaicam) {
                 resetErrorTracking();
