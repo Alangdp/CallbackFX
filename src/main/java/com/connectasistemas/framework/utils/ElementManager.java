@@ -24,10 +24,8 @@ public class ElementManager {
     // Registro de tipos suportados
     private static final Map<Class<?>, Supplier<Object>> registry = new HashMap<>();
     private static final BorderPanePosition borderPanePosition = new BorderPanePosition();
-    private static String literal = "";
-
     static {
-        // Registro padrão
+        // Registro padrao
         registry.put(TextField.class, TextField::new);
         registry.put(TextArea.class, TextArea::new);
         registry.put(Label.class, Label::new);
@@ -38,9 +36,9 @@ public class ElementManager {
         registry.put(TableColumn.class, TableColumn::new);
         registry.put(Tab.class, Tab::new);
 
-        // Registros personalizados
-        registry.put(TextEntryLabel.class, () -> new TextEntryLabel(literal));
-        registry.put(CheckEntryLabel.class, () -> new CheckEntryLabel(literal));
+        // Registros personalizados (TextEntryLabel/CheckEntryLabel usam literal via createElement(type, literal))
+        registry.put(TextEntryLabel.class, () -> new TextEntryLabel(""));
+        registry.put(CheckEntryLabel.class, () -> new CheckEntryLabel(""));
         registry.put(ImageView.class, ImageView::new);
 
         // Criação de Region
@@ -63,32 +61,58 @@ public class ElementManager {
         
         // TabPane
         registry.put(TabPane.class, TabPane::new);
+
+        // Outros
+        registry.put(Accordion.class, Accordion::new);
+        registry.put(TitledPane.class, TitledPane::new);
+
     }
 
     /**
-     * Cria um elemento vazio do tipo recebido
+     * Cria um elemento do tipo recebido sem literal.
      *
-     * @param type Classe do tipo que deseja criar o elemento
-     * @return Elemento do tipo recebido
+     * @param type classe do tipo que deseja criar o elemento
+     * @return elemento do tipo recebido
      */
     public static Object createElement(Class<?> type) {
-        // Cria o node vazio
-        Object node = createRegisteredElement(type);
+        return createElement(type, "");
+    }
 
-        // Aplica literal ao elemento (Quando aplicável)
-        ElementManager.applyLiteral(node, ElementManager.literal);
+    /**
+     * Cria um elemento do tipo recebido e aplica o literal informado.
+     *
+     * @param type    classe do tipo que deseja criar o elemento
+     * @param literal texto literal a ser aplicado ao componente
+     * @return elemento do tipo recebido
+     */
+    public static Object createElement(Class<?> type, String literal) {
+        // Trata TextEntryLabel e CheckEntryLabel que precisam do literal no construtor
+        Object node = createRegisteredElementWithLiteral(type, literal);
+
+        // Aplica literal ao elemento (quando aplicavel)
+        applyLiteral(node, literal);
 
         // Retorna o elemento criado
         return node;
     }
 
     /**
-     * Cria um elemento vazio do tipo recebido
+     * Cria um elemento do tipo recebido, passando literal ao construtor quando
+     * necessario (TextEntryLabel, CheckEntryLabel).
      *
-     * @param type Classe do tipo que deseja criar o elemento
-     * @return Elemento do tipo recebido
+     * @param type    classe do tipo que deseja criar o elemento
+     * @param literal texto literal repassado ao construtor quando aplicavel
+     * @return elemento do tipo recebido
      */
-    private static Object createRegisteredElement(Class<?> type) {
+    private static Object createRegisteredElementWithLiteral(Class<?> type, String literal) {
+        // Casos especiais que precisam do literal no construtor
+        if (type == TextEntryLabel.class) {
+            return new TextEntryLabel(literal != null ? literal : "");
+        }
+        if (type == CheckEntryLabel.class) {
+            return new CheckEntryLabel(literal != null ? literal : "");
+        }
+
         Supplier<Object> creator = registry.get(type);
         if (creator != null) {
             return creator.get();
@@ -98,7 +122,7 @@ public class ElementManager {
             return createCustomElement(type);
         }
 
-        throw new RuntimeException(StringUtils.concat("Tipo inválido: ", type.getName()));
+        throw new RuntimeException(StringUtils.concat("Tipo invalido: ", type.getName()));
     }
 
     /**
@@ -130,6 +154,16 @@ public class ElementManager {
 
         if (parent instanceof TableColumn<?, ?> tableColumn) {
             addChildToTableColumn(tableColumn, child);
+            return;
+        }
+
+        if (parent instanceof Accordion accordion) {
+            addChildToAccordion(accordion, child);
+            return;
+        }
+
+        if (parent instanceof TitledPane titledPane) {
+            addChildToTitledPane(titledPane, child);
             return;
         }
 
@@ -169,16 +203,14 @@ public class ElementManager {
                 region.getClass().getName()));
     }
 
-    public static void setLiteral(String literal) {
-        ElementManager.literal = literal;
-    }
-
     /**
-     * Aplica o literal (texto) ao componente conforme seu tipo
+     * Aplica o literal (texto) ao componente conforme seu tipo.
+     *
+     * @param element elemento alvo
+     * @param literal texto a ser aplicado
      */
     private static void applyLiteral(Object element, String literal) {
         if (literal == null || literal.isEmpty() || element == null) {
-            ElementManager.literal = "";
             return;
         }
 
@@ -193,8 +225,6 @@ public class ElementManager {
         } else if (element instanceof TreeItem<?> treeItem) {
             applyTreeItemLiteral(treeItem, literal);
         }
-
-        ElementManager.literal = "";
     }
 
     private static void applyTreeItemLiteral(TreeItem<?> treeItem, String literal) {
@@ -313,6 +343,18 @@ public class ElementManager {
         TableColumn<?, ?> column = requireTableColumnChild(child, parentColumn.getClass().getSimpleName());
         TableColumn rawColumn = parentColumn;
         rawColumn.getColumns().add(column);
+    }
+
+    private static void addChildToAccordion(Accordion accordion, Object child) {
+        Node nodeChild = requireNodeChild(child, accordion.getClass().getSimpleName());
+        TitledPane titledPane = new TitledPane();
+        titledPane.setContent(nodeChild);
+        accordion.getPanes().add(titledPane);
+    }
+
+    private static void addChildToTitledPane(TitledPane titledPane, Object child) {
+        Node nodeChild = requireNodeChild(child, titledPane.getClass().getSimpleName());
+        titledPane.setContent(nodeChild);
     }
 
     private static Node requireNodeChild(Object child, String parentType) {

@@ -22,6 +22,12 @@ public final class TabVisibilityManager {
     private TabVisibilityManager() {
     }
 
+    /**
+     * Exibe ou oculta uma aba preservando sua posição original.
+     *
+     * @param tab     aba monitorada
+     * @param visible indica se deve permanecer visível
+     */
     public static void setVisible(Tab tab, boolean visible) {
         if (tab == null) {
             return;
@@ -34,6 +40,10 @@ public final class TabVisibilityManager {
         }
     }
 
+    /**
+     * Remove a aba do {@link TabPane} armazenando o índice original para futura
+     * restauração.
+     */
     private static void hide(Tab tab) {
         TabState state = STATES.computeIfAbsent(tab, key -> new TabState());
         if (state.hidden) {
@@ -59,6 +69,9 @@ public final class TabVisibilityManager {
         state.hidden = true;
     }
 
+    /**
+     * Insere novamente a aba respeitando o índice previamente armazenado.
+     */
     private static void show(Tab tab) {
         TabState state = STATES.computeIfAbsent(tab, key -> new TabState());
         TabPane currentParent = state.parent != null ? state.parent : tab.getTabPane();
@@ -78,6 +91,7 @@ public final class TabVisibilityManager {
             insertionIndex = currentParent.getTabs().size();
         }
 
+        // Reinsere a aba aplicando o estado original
         currentParent.getTabs().add(insertionIndex, tab);
         state.hidden = false;
         state.parent = currentParent;

@@ -3,7 +3,6 @@ package com.connectasistemas.framework.internal.events;
 import com.connectasistemas.framework.enums.EventType;
 import com.connectasistemas.framework.internal.interfaces.EventBinderEvents;
 import com.connectasistemas.framework.internal.utils.CallbackInvoker;
-import com.connectasistemas.framework.utils.Status;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.control.CheckBox;
@@ -61,13 +60,13 @@ public class EventBinderCheckBox extends EventBinderEvents {
 
             publishEvent(EventType.SAICAM);
 
-            if (Status.consumeValidationSkip()) {
-                Status.VALIDA = false;
+            if (consumeValidationSkip()) {
+                changeValida(false);
                 clearExitReason();
                 return;
             }
 
-            Status.VALIDA = shouldValidateOnExit();
+            changeValida(shouldValidateOnExit());
             if (hasSaicam) {
                 resetErrorTracking();
                 CallbackInvoker.call(callbacksInstance, screenInstance, "saicam", acronym);

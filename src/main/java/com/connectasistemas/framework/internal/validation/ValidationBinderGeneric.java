@@ -4,13 +4,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.function.UnaryOperator;
 
 import javafx.application.Platform;
@@ -26,7 +23,9 @@ import com.connectasistemas.framework.internal.interfaces.ValidationBinder;
 import com.connectasistemas.framework.internal.utils.CallbackInvoker;
 import com.connectasistemas.framework.internal.utils.MessageUtil;
 import com.connectasistemas.framework.internal.utils.ScreenManagerSharedData;
-import com.connectasistemas.framework.utils.Status;
+import com.connectasistemas.framework.utils.EventContext;
+import com.connectasistemas.framework.utils.ScreenRuntimeContext;
+
 import com.connectasistemas.framework.utils.StringUtils;
 
 /**
@@ -35,7 +34,7 @@ import com.connectasistemas.framework.utils.StringUtils;
  */
 public class ValidationBinderGeneric implements ValidationBinder {
 
-    private static final Map<ButtonBase, List<TriggerAction>> BUTTON_TRIGGERS = new WeakHashMap<>();
+    private static final ScreenRuntimeContext ctx = ScreenRuntimeContext.getDefault();
 
     /**
      * Aplica todas as validações declaradas em ScreenValidation ao Node fornecido.
@@ -128,7 +127,10 @@ public class ValidationBinderGeneric implements ValidationBinder {
                     "Elemento configurado em validateOn precisa ser um ButtonBase: ", triggerAcronym));
         }
 
-        List<TriggerAction> actions = BUTTON_TRIGGERS.computeIfAbsent(button, key -> {
+        @SuppressWarnings("unchecked")
+        Map<ButtonBase, List<TriggerAction>> triggers =
+                (Map<ButtonBase, List<TriggerAction>>) (Map<?, ?>) ctx.getValidationState().getButtonTriggers();
+        List<TriggerAction> actions = triggers.computeIfAbsent(button, key -> {
             List<TriggerAction> list = new ArrayList<>();
             button.addEventFilter(ActionEvent.ACTION, event -> {
                 for (TriggerAction action : new ArrayList<>(list)) {
@@ -525,7 +527,8 @@ public class ValidationBinderGeneric implements ValidationBinder {
             lastValid = result.valid();
             lastMessage = result.message();
 
-            Status.VALIDA = result.valid();
+            // Atualiza o EventContext
+            EventContext.getDefault().setValida(result.valid());
 
             if (hasValidationCallback) {
                 String safeText = text == null ? "" : text;
@@ -554,19 +557,23 @@ public class ValidationBinderGeneric implements ValidationBinder {
     }
 
     private static final class FocusSuppression {
-        private static final Set<TextInputControl> SUPPRESSED = Collections.newSetFromMap(new IdentityHashMap<>());
 
         private FocusSuppression() {
         }
 
         private static void suppress(TextInputControl control) {
             if (control != null) {
-                SUPPRESSED.add(control);
+                Set<TextInputControl> suppressed = ctx.getValidationState().getFocusSuppressed();
+                suppressed.add(control);
             }
         }
 
         private static boolean consume(TextInputControl control) {
-            return control != null && SUPPRESSED.remove(control);
+            if (control == null) {
+                return false;
+            }
+            Set<TextInputControl> suppressed = ctx.getValidationState().getFocusSuppressed();
+            return suppressed.remove(control);
         }
     }
 

@@ -29,12 +29,16 @@ public class ScreenMetadata implements ScreenCompositionMetadata {
     // Mapa dos campos anotados: acrônimo → Field
     private final Map<String, Field> fields = new HashMap<>();
 
-    // Define o título
+    /**
+     * Define o título extraído da anotação {@code @Screen}.
+     */
     public void setTitle(String title) {
         this.title = title;
     }
 
-    // Adiciona um campo anotado
+    /**
+     * Registra um campo anotado, garantindo unicidade por acrônimo.
+     */
     public void addField(String acronym, Field field) {
         // Caso já exista retorna uma exceção
         if (fields.containsKey(acronym)) {
@@ -44,7 +48,9 @@ public class ScreenMetadata implements ScreenCompositionMetadata {
         fields.put(acronym, field);
     }
 
-    // Retorna o título
+    /**
+     * @return título configurado
+     */
     public String getTitle() {
         return title;
     }
@@ -77,14 +83,24 @@ public class ScreenMetadata implements ScreenCompositionMetadata {
         this.callbackInstance = callbackInstance;
     }
 
+    /**
+     * @return raiz construída para a tela
+     */
     public Region root() {
         return root;
     }
 
+    /**
+     * Cria uma nova raiz baseado no tipo informado.
+     */
     public void setRoot(Class<?> clz) {
         this.root = RegionManager.createRegion(clz);
     }
 
+    /**
+     * Substitui o root usando uma instância já criada (para classes que estendem
+     * {@link Region}).
+     */
     public void overrideRoot(Region region) {
         if (region == null) {
             throw new IllegalArgumentException("Root não pode ser nulo");
@@ -94,6 +110,10 @@ public class ScreenMetadata implements ScreenCompositionMetadata {
 
     // Retorna o mapa de campos anotados
     // OBS: Retorna a ordem hierárquica conforme os pais e o order definido em @ScreenFieldPosition
+    /**
+     * Expõe o mapa de campos na ordem hierárquica calculada considerando pai e
+     * atributo {@code order}.
+     */
     public Map<String, Field> getFields() {
 
         List<Map.Entry<String, Field>> roots = new ArrayList<>();

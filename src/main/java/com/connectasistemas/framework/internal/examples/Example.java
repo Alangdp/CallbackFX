@@ -15,6 +15,7 @@ import javafx.scene.control.TreeView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import com.connectasistemas.framework.annotation.Screen;
@@ -30,6 +31,7 @@ import com.connectasistemas.framework.fxelements.CheckEntryLabel;
 import com.connectasistemas.framework.fxelements.TextEntryLabel;
 import com.connectasistemas.framework.interfaces.CustomElement;
 import com.connectasistemas.framework.utils.StringUtils;
+import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
 
 /**
  * Tela de demonstração que exercita os recursos principais do CallbackFX.
@@ -156,6 +158,17 @@ public class Example {
     @ScreenProperties(cursor = CursorType.HAND, tooltip = "Exporta os registros visíveis")
     public Button exportButton;
 
+    @ScreenField(acronym = "delimiterPreviewTitle", father = "overviewContainer", literal = "Delimitação por porcentagem", order = 4)
+    public Label delimiterPreviewTitle;
+
+    @ScreenField(acronym = "delimiterPreviewPane", father = "overviewContainer", order = 5)
+    @ScreenFieldSize(height = 220, width = 300)
+    public StackPane delimiterPreviewPane;
+
+    @ScreenField(acronym = "dragTokenLabel", father = "overviewContainer", literal = "Arraste este elemento para testar os delimitadores", order = 6)
+    @ScreenFieldPosition(alignment = Position.CENTER)
+    public Label dragTokenLabel;
+
     @ScreenField(acronym = "detailsContainer", father = "detailsTab", order = 1)
     @ScreenFieldSize(padding = { 16, 16, 16, 16 }, spacing = 10)
     public VBox detailsContainer;
@@ -224,6 +237,11 @@ public class Example {
     @ScreenFieldSize(height = 220, vgrow = true)
     @ScreenProperties(focusTraversable = false)
     public ListView<String> eventLogList;
+
+    /**
+     * Overlay utilizado para demonstrar o uso de delimitadores na tela de exemplo.
+     */
+    public transient RegionOverlayPane delimiterOverlayPane;
 
     /**
      * Cartão simples para destacar métricas dinâmicas.

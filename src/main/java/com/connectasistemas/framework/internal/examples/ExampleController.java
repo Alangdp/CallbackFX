@@ -12,20 +12,27 @@ import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TreeItem;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 
 import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor;
 import com.connectasistemas.framework.internal.examples.views.ProjectTreeEditor.ProjectTreeEditorListener;
 import com.connectasistemas.framework.internal.utils.MessageUtil;
 import com.connectasistemas.framework.utils.DateTimeUtils;
+import com.connectasistemas.framework.utils.EventContext;
 import com.connectasistemas.framework.utils.NumberUtils;
 import com.connectasistemas.framework.utils.ScreenManager;
-import com.connectasistemas.framework.utils.Status;
 import com.connectasistemas.framework.utils.StringUtils;
 import com.connectasistemas.framework.utils.TableManager;
 import com.connectasistemas.framework.utils.TreeManager;
+import com.connectasistemas.framework.utils.delimiter.Delimiter;
+import com.connectasistemas.framework.utils.delimiter.RegionOverlayPane;
+import com.connectasistemas.framework.utils.drag.DragHandlers;
+import com.connectasistemas.framework.utils.drag.DragUtils;
 
 /**
  * Controller responsável por demonstrar o uso das principais utilidades do
@@ -151,8 +158,8 @@ public class ExampleController {
         addEventLog(screen, StringUtils.concat("Inspeção de projeto: ", project.name()));
     }
 
-    public void callbackAltcamSaveButton(Example screen) {
-        saveProject(screen);
+    public void callbackAltcamSaveButton(Example screen, EventContext context) {
+        saveProject(screen, context);
     }
 
     public void callbackAltcamClearButton(Example screen) {
@@ -163,6 +170,64 @@ public class ExampleController {
         screen.layoutSplit.setDividerPositions(0.28);
         screen.datasetTable.setPlaceholder(new Label("Nenhum registro encontrado"));
         screen.eventLogList.setItems(eventLog);
+        configureDelimiterPreview(screen);
+        configureDragToken(screen);
+    }
+
+    private void announceDelimiterDrop(Example screen, String zoneName) {
+
+        
+        updateStatus(screen, StringUtils.concat("Drop detectado na área ", zoneName));
+        addEventLog(screen, StringUtils.concat("Overlay demo acionado: ", zoneName));
+    }
+
+    private void configureDelimiterPreview(Example screen) {
+        if (screen == null || screen.delimiterPreviewPane == null) {
+            return;
+        }
+
+        screen.delimiterPreviewPane.setMinSize(300, 200);
+        screen.delimiterPreviewPane.setPrefSize(300, 200);
+
+        RegionOverlayPane overlay = new RegionOverlayPane(screen.delimiterPreviewPane);
+
+        registerDelimiterZone(screen, overlay, 100d, 25d, 0d, 0d, "Top");
+        registerDelimiterZone(screen, overlay, 33d, 50d, 0d, 25d, "Left");
+        registerDelimiterZone(screen, overlay, 34d, 50d, 33d, 25d, "Center");
+        registerDelimiterZone(screen, overlay, 33d, 50d, 67d, 25d, "Right");
+        registerDelimiterZone(screen, overlay, 100d, 25d, 0d, 75d, "Bottom");
+    }
+
+    private void registerDelimiterZone(
+            Example screen,
+            RegionOverlayPane overlay,
+            double widthPercent,
+            double heightPercent,
+            double startXPercent,
+            double startYPercent,
+            String label) {
+        overlay.addDelimiter(new Delimiter(widthPercent, heightPercent, startXPercent, startYPercent, label,
+                (event, delimiter) -> announceDelimiterDrop(screen, label)));
+    }
+
+    private void configureDragToken(Example screen) {
+        if (screen == null || screen.dragTokenLabel == null) {
+            return;
+        }
+
+        Label label = screen.dragTokenLabel;
+
+        DragHandlers handlers = DragHandlers.builder()
+            .onDragDetected(event -> {
+                Dragboard dragboard = label.startDragAndDrop(TransferMode.ANY);
+                ClipboardContent content = new ClipboardContent();
+                content.putString("token-demo");
+                dragboard.setContent(content);
+                event.consume();
+            })
+            .build();
+
+        DragUtils.registerDragHandlers(label, handlers);
     }
 
     private void seedProjects(Example screen) {
@@ -316,8 +381,8 @@ public class ExampleController {
         screen.descriptionInput.setText(project.description());
     }
 
-    private void saveProject(Example screen) {
-        if (!validateForm(screen)) {
+    private void saveProject(Example screen, EventContext context) {
+        if (!validateForm(screen, context)) {
             return;
         }
 
@@ -337,7 +402,7 @@ public class ExampleController {
         updateMetrics(screen);
         updateStatus(screen, StringUtils.concat("Projeto salvo: ", name));
         addEventLog(screen, StringUtils.concat("Registro atualizado: ", name));
-        Status.clearError();
+        context.clearError();
     }
 
     private void clearForm(Example screen) {
@@ -357,29 +422,29 @@ public class ExampleController {
         addEventLog(screen, "Campos retornaram ao estado inicial");
     }
 
-    private boolean validateForm(Example screen) {
+    private boolean validateForm(Example screen, EventContext context) {
         if (screen == null) {
             return false;
         }
 
         String name = StringUtils.trim(screen.projectNameField.getValue());
         if (StringUtils.isBlank(name)) {
-            Status.markError(screen.projectNameField.getTextField());
-            MessageUtil.warn("Validação", "Informe o nome do recurso.");
+            context.markError(screen.projectNameField.getTextField());
+            MessageUtil.warn("Validacao", "Informe o nome do recurso.");
             return false;
         }
 
         String owner = StringUtils.trim(screen.ownerField.getValue());
         if (StringUtils.isBlank(owner)) {
-            Status.markError(screen.ownerField.getTextField());
-            MessageUtil.warn("Validação", "Informe o responsável pelo recurso.");
+            context.markError(screen.ownerField.getTextField());
+            MessageUtil.warn("Validacao", "Informe o responsavel pelo recurso.");
             return false;
         }
 
         int version = NumberUtils.toInt(screen.versionField.getValue());
         if (version <= 0 || version > 99) {
-            Status.markError(screen.versionField.getTextField());
-            MessageUtil.warn("Validação", "Versão deve estar entre 1 e 99.");
+            context.markError(screen.versionField.getTextField());
+            MessageUtil.warn("Validacao", "Versao deve estar entre 1 e 99.");
             return false;
         }
 

@@ -6,45 +6,77 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Usado em conjunto com @ScreenField para indicar o tamanho de um elemento
+ * Especifica tamanhos, espaçamentos e comportamento de crescimento para campos anotados com {@link ScreenField}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ScreenFieldSize {
-    // Define o tamanho preferencial do elemento
+    /**
+     * Largura preferencial do elemento.
+     */
     double width() default 0;
+    /**
+     * Altura preferencial do elemento.
+     */
     double height() default 0;
 
-    // Limites mínimos/máximos (aceita pixels ou porcentagem 0-1)
+    /**
+     * Largura mínima aceita (px ou percentual 0-1).
+     */
     double minWidth() default 0;
+    /**
+     * Largura máxima aceita (px ou percentual 0-1).
+     */
     double maxWidth() default 0;
+    /**
+     * Altura mínima aceita (px ou percentual 0-1).
+     */
     double minHeight() default 0;
+    /**
+     * Altura máxima aceita (px ou percentual 0-1).
+     */
     double maxHeight() default 0;
 
-    // Tamanhos máximos
+    /**
+     * Remove limites horizontais aplicados pelo layout.
+     */
     boolean unlimitedWidth() default false;
+    /**
+     * Remove limites verticais aplicados pelo layout.
+     */
     boolean unlimitedHeight() default false;
 
-    // Define o tamanho em labels
-    // OBS: Usado para pradorizar tamanhos de labels em campos que possuem os elementos lado a lado...
-    // ...ex: Label + TextField (EntryLabelTextField)
+    /**
+     * Largura padrão para labels associados (EntryLabel etc.).
+     */
     double labelWidth () default 0;
+    /**
+     * Altura padrão para labels associados.
+     */
     double labelHeight() default 0;
 
-    // Padding: 1=top, 2=right, 3=bottom, 4=left
-    // EXE: @ScreenFieldSize(padding = {10, 20, 10, 20})
+    /**
+     * Padding em ordem top/right/bottom/left.
+     */
     int[] padding() default {};
 
-    // Margin: 1=top, 2=right, 3=bottom, 4=left
-    // EXE: @ScreenFieldSize(margin = {10, 20, 10, 20})
+    /**
+     * Margem em ordem top/right/bottom/left.
+     */
     int[] margin() default {};
 
-    // Define o tipo de crescimento vertical
+    /**
+     * Expande verticalmente quando houver espaço extra.
+     */
     boolean vgrow() default false;
 
-    // Define o tipo de crescimento horizontal
+    /**
+     * Expande horizontalmente quando houver espaço extra.
+     */
     boolean hgrow() default false;
 
-    // Define o espaçamento
+    /**
+     * Espaçamento entre sub-elementos internos.
+     */
     double spacing() default 0;
 }

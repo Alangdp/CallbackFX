@@ -11,7 +11,8 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 
 /**
- * Utilidades para inspeção de {@link TreeItem} associados a telas anotadas com {@code @Screen}.
+ * Utilidades para inspeção de {@link TreeItem} associados a telas anotadas com
+ * {@code @Screen}.
  */
 public final class TreeManager {
 
@@ -40,7 +41,8 @@ public final class TreeManager {
     }
 
     /**
-     * Monta o caminho textual do nó até a raiz, permitindo personalizar o separador.
+     * Monta o caminho textual do nó até a raiz, permitindo personalizar o
+     * separador.
      *
      * @param item      nó alvo
      * @param separator separador entre cada segmento
@@ -104,7 +106,8 @@ public final class TreeManager {
     }
 
     /**
-     * Retorna o {@link TreeItem} associado ao acrônimo informado, quando disponível.
+     * Retorna o {@link TreeItem} associado ao acrônimo informado, quando
+     * disponível.
      *
      * @param screenInstance instância da tela atual
      * @param acronym        identificador do campo anotado
@@ -129,7 +132,8 @@ public final class TreeManager {
     }
 
     /**
-     * Obtém o item atualmente selecionado em uma {@link TreeView} registrada pelo acrônimo informado.
+     * Obtém o item atualmente selecionado em uma {@link TreeView} registrada pelo
+     * acrônimo informado.
      *
      * @param screenInstance instância da tela atual
      * @param treeAcronym    identificador do campo que representa a TreeView
@@ -141,7 +145,8 @@ public final class TreeManager {
     }
 
     /**
-     * Obtém o item atualmente selecionado diretamente a partir da {@link TreeView} informada.
+     * Obtém o item atualmente selecionado diretamente a partir da {@link TreeView}
+     * informada.
      *
      * @param treeView instância alvo
      * @return item selecionado ou {@code null}
@@ -155,7 +160,8 @@ public final class TreeManager {
     }
 
     /**
-     * Alias semântico para {@link #getSelectedItem(Object, String)}, usado em callbacks.
+     * Alias semântico para {@link #getSelectedItem(Object, String)}, usado em
+     * callbacks.
      *
      * @param screenInstance instância da tela atual
      * @param treeAcronym    identificador do campo que representa a TreeView
@@ -199,7 +205,8 @@ public final class TreeManager {
     }
 
     /**
-     * Define explicitamente o item selecionado da TreeView associada ao acrônimo informado.
+     * Define explicitamente o item selecionado da TreeView associada ao acrônimo
+     * informado.
      *
      * @param screenInstance instância da tela atual
      * @param treeAcronym    identificador do campo que representa a TreeView
@@ -229,7 +236,8 @@ public final class TreeManager {
     }
 
     /**
-     * Retorna uma chave amigável para uso em instruções {@code switch}, preferindo o acrônimo do item e
+     * Retorna uma chave amigável para uso em instruções {@code switch}, preferindo
+     * o acrônimo do item e
      * caindo para o rótulo exibido quando necessário.
      *
      * @param screenInstance instância da tela atual
@@ -250,7 +258,8 @@ public final class TreeManager {
     }
 
     /**
-     * Retorna a chave amigável do item atualmente selecionado, facilitando {@code switch} diretos.
+     * Retorna a chave amigável do item atualmente selecionado, facilitando
+     * {@code switch} diretos.
      *
      * @param screenInstance instância da tela atual
      * @param treeAcronym    identificador do campo que representa a TreeView
@@ -262,7 +271,8 @@ public final class TreeManager {
     }
 
     /**
-     * Retorna a chave amigável do item selecionado diretamente pela {@link TreeView}.
+     * Retorna a chave amigável do item selecionado diretamente pela
+     * {@link TreeView}.
      *
      * @param screenInstance instância da tela atual
      * @param treeView       instância alvo
@@ -327,5 +337,52 @@ public final class TreeManager {
         }
 
         return null;
+    }
+
+    /**
+     * Cria e adiciona um novo {@link TreeItem} como filho do nó informado.
+     *
+     * @param parent nó pai onde o item será adicionado
+     * @param value  valor do novo item
+     * @return novo {@link TreeItem} criado e adicionado, ou {@code null} se o pai
+     *         for nulo
+     */
+    public static <T> TreeItem<T> addItem(TreeItem<T> parent, T value) {
+        if (parent == null) {
+            return new TreeItem<>(value);
+        }
+
+        TreeItem<T> newItem = new TreeItem<>(value);
+        parent.getChildren().add(newItem);
+        return newItem;
+    }
+
+    /**
+     * Remove o {@link TreeItem} informado do seu pai.
+     *
+     * @param item nó a ser removido
+     * @return {@code true} se removido com sucesso, {@code false} caso não tenha
+     *         pai ou não esteja entre os filhos
+     */
+    public static boolean removeItem(TreeItem<?> item) {
+        if (item == null || item.getParent() == null) {
+            return false;
+        }
+        return item.getParent().getChildren().remove(item);
+    }
+
+    /**
+     * Expande recursivamente o {@link TreeItem} informado e todos os seus
+     * descendentes.
+     * 
+     * @param item nó raiz a ser expandida
+     */
+    public static void expandAll(TreeItem<?> item) {
+        if (item != null) {
+            item.setExpanded(true);
+            for (TreeItem<?> child : item.getChildren()) {
+                expandAll(child);
+            }
+        }
     }
 }

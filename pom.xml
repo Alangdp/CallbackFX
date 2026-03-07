@@ -37,6 +37,36 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- TestFX Core -->
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>testfx-core</artifactId>
+            <version>4.0.18</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- TestFX JUnit 5 -->
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>testfx-junit5</artifactId>
+            <version>4.0.18</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Monocle para execução headless -->
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>openjfx-monocle</artifactId>
+            <version>jdk-12.0.1+2</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -49,6 +79,54 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-reads</arg>
+                                <arg>com.connectasistemas.framework=java.desktop</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>
+                        --add-opens javafx.graphics/com.sun.javafx.application=ALL-UNNAMED
+                        --add-exports javafx.graphics/com.sun.glass.ui=ALL-UNNAMED
+                        --add-reads com.connectasistemas.framework=java.desktop
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.utils=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.processor=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.examples=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.sizes=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.position=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.events=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.validation=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.interfaces=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.properties=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.utils.records=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.utils.drag=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.internal.examples.views=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.utils.delimiter=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.utils.drag=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.utils=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.annotation=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.enums=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.fxelements=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework.interfaces=ALL-UNNAMED
+                        --add-opens com.connectasistemas.framework/com.connectasistemas.framework=ALL-UNNAMED
+                        -Djava.awt.headless=true
+                        -Dtestfx.robot=glass
+                        -Dtestfx.headless=true
+                        -Dprism.order=sw
+                        -Dprism.text=t2k
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>

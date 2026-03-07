@@ -8,11 +8,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Usado em conjunto com @ScreenField para a posição de um elemento
+ * Complementa {@link ScreenField} para refinar o alinhamento dentro do pai.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ScreenFieldPosition {
-    // Alinhamento do elemento em relação ao pai
+    /**
+     * Alinhamento relativo ao pai conforme {@link Position}.
+     */
     Position alignment() default Position.CENTER;
 }

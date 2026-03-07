@@ -83,6 +83,10 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         stage.setOpacity(properties.opacity());
     }
 
+    /**
+     * Replica as propriedades em elementos do tipo {@link Tab} sem perder o
+     * controle de visibilidade.
+     */
     public void applyToTab(ScreenProperties properties, Tab tab) {
         if (properties == null || tab == null) {
             return;
@@ -95,6 +99,9 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         TabVisibilityManager.setVisible(tab, properties.visible());
     }
 
+    /**
+     * Ajusta colunas de tabelas com base nos atributos declarados via anotação.
+     */
     public void applyToTableColumn(ScreenProperties properties, TableColumn<?, ?> column) {
         if (properties == null || column == null) {
             return;
@@ -259,6 +266,7 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
 
         if (node instanceof SplitPane splitPane) {
             if (!resizableWithParent) {
+                // SplitPane precisa de decoração especial para travar divisórias
                 applySplitPaneFixedStyle(splitPane);
             }
         }
@@ -323,6 +331,9 @@ public class PropertiesBinderGeneric implements PropertiesBinder {
         treeView.setShowRoot(properties.showRoot());
     }
 
+    /**
+     * Define o estado expandido padrão de itens de árvore conforme o metadado.
+     */
     public void applyToTreeItem(ScreenProperties properties, TreeItem<?> treeItem) {
         if (properties == null || treeItem == null) {
             return;
